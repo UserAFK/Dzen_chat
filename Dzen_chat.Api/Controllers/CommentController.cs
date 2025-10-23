@@ -16,6 +16,13 @@ public class CommentController(CommentService commentService) : ControllerBase
         return Ok(new { comments });
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetCommentById(Guid id)
+    {
+        var comment = await commentService.GetCommentWithLimitedReplies(id);// GetCommentByIdAsync(id);
+        return Ok(new { comment });
+    }
+
     [HttpPost]
     public async Task<IActionResult> AddComment([FromBody] CommentDto comment)
     {

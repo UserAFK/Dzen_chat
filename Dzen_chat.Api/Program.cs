@@ -4,8 +4,8 @@ using Infrastructure;
 using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-var builder = WebApplication.CreateBuilder(args);
 
+var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -18,13 +18,10 @@ Log.Logger = new LoggerConfiguration()
     //    })
     .CreateLogger();
 
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddAutoMapper(c =>
-    c.CreateMap<Comment, CommentDto>()
-    .ReverseMap());
+builder.Services.AddAutoMapper(c => c.CreateMap<Comment, CommentDto>().ReverseMap());
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
