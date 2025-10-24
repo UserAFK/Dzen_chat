@@ -19,7 +19,7 @@ public class CommentController(CommentService commentService) : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetCommentById(Guid id)
     {
-        var comment = await commentService.GetCommentWithLimitedReplies(id);// GetCommentByIdAsync(id);
+        var comment = await commentService.GetCommentWithLimitedReplies(id);
         return Ok(new { comment });
     }
 
