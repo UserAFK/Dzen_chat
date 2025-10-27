@@ -1,4 +1,6 @@
-﻿namespace Application.Dto;
+﻿using Microsoft.AspNetCore.Http;
+
+namespace Application.Dto;
 
 public class CommentDto
 {
@@ -7,4 +9,5 @@ public class CommentDto
     public string? Email { get; set; }
     public string? HomePage { get; set; }
     public Guid? ParentCommentId { get; set; }
+    public IFormFile? File { get; set; }
 }

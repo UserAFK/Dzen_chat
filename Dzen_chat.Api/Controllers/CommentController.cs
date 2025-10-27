@@ -6,13 +6,13 @@ namespace Dzen_chat.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CommentController(CommentService commentService) : ControllerBase
+public class CommentController(CommentService commentService, FileService fileService) : ControllerBase
 {
 
     [HttpGet()]
-    public async Task<IActionResult> GetComments()
+    public async Task<IActionResult> GetComments([FromQuery] int? page, string? orderBy, string? order)
     {
-        var comments = await commentService.GetCommentsAsync();
+        var comments = await commentService.GetCommentsAsync(page, orderBy, order);
         return Ok(new { comments });
     }
 
@@ -24,9 +24,19 @@ public class CommentController(CommentService commentService) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddComment([FromBody] CommentDto comment)
+    [RequestSizeLimit(2_000_000)]
+    public async Task<IActionResult> AddComment([FromForm] CommentDto comment)
     {
         await commentService.AddCommentAsync(comment);
         return Ok("Comment added successfully.");
+    }
+
+    [HttpGet("{id}/file")]
+    public async Task<IActionResult> GetCommentFile(Guid id)
+    {
+        var (filetype, filedata, filename) = await fileService.GetFileAsync(id);
+        if (filedata.Length == 0)
+            return NotFound("File not found.");
+        return File(filedata, filetype, filename);
     }
 }

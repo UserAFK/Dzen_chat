@@ -1,8 +1,10 @@
 using Application;
 using Application.Dto;
+using Dzen_chat.Api.Extentions;
 using Infrastructure;
 using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,9 +36,12 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddResponseCaching();
 builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<FileService>();
+builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+builder.Services.AddHostedService<FileProcessingService>();
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(options =>
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-    options.UseInMemoryDatabase("DzenChatDb"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    //options.UseInMemoryDatabase("DzenChatDb"));
 builder.Host.UseSerilog();
 
 var app = builder.Build();
@@ -47,10 +52,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 app.UseCors("AllowAll");
+app.UseHsts();
+
 app.UseResponseCaching();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+app.CreateDatabase();
 
 app.Logger.LogInformation("Dzen chat started");
 app.Run();

@@ -14,6 +14,8 @@ public class Comment
     [Required]
     public string Email { get; set; } = string.Empty;
     public string? HomePage { get; set; }
+    public string? FileType { get; set; }
+    public byte[]? FileData { get; set; }
     public Guid? ParentCommentId { get; set; }
     public Comment? ParentComment { get; set; }
     public ICollection<Comment> Replies { get; set; } = new List<Comment>();
