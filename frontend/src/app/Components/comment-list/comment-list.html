@@ -1,0 +1,22 @@
+<app-comment-form (commentAdded)="onCommentAdded()"></app-comment-form>
+
+<table>
+  <thead>
+    <tr>
+      <th (click)="toggleSort('username')">User</th>
+      <th (click)="toggleSort('email')">Email</th>
+      <th>Date</th>
+      <th>File</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let c of (comments$ | async)?.comments">
+      <td>{{ c.username }}</td>
+      <td>{{ c.email }}</td>
+      <td>{{ c.createdAt | date:'short' }}</td>
+      <td>
+        <button *ngIf="c.fileType" (click)="download(c)">Download</button>
+      </td>
+    </tr>
+  </tbody>
+</table>

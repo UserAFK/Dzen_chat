@@ -1,0 +1,10 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
+  <input formControlName="username" placeholder="User name" />
+  <input formControlName="email" placeholder="Email" />
+  <input formControlName="homepage" placeholder="Homepage (optional)" />
+  <textarea formControlName="content" placeholder="Message..."></textarea>
+
+  <input type="file" (change)="onFileSelected($event)" />
+  <button type="submit" [disabled]="form!.invalid">Send</button>
+</form>
+

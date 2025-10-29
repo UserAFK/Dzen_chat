@@ -31,6 +31,9 @@ public class CommentService
             "username" => order?.ToLower() == "desc"
                                 ? query.OrderByDescending(c => c.Username)
                                 : query.OrderBy(c => c.Username),
+            "email" => order?.ToLower() == "desc"
+                                ? query.OrderByDescending(c => c.Email)
+                                : query.OrderBy(c => c.Username),
             "createdat" => order?.ToLower() == "desc"
                                 ? query.OrderByDescending(c => c.CreatedAt)
                                 : query.OrderBy(c => c.CreatedAt),
