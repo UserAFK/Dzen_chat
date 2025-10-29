@@ -10,7 +10,8 @@
     </tr>
   </thead>
   <tbody>
-    <tr *ngFor="let c of (comments$ | async)?.comments">
+    <!-- <tr *ngFor="let c of (comments$ | async)?.comments"> -->
+    <tr *ngFor="let c of comments$ | async">
       <td>{{ c.username }}</td>
       <td>{{ c.email }}</td>
       <td>{{ c.createdAt | date:'short' }}</td>

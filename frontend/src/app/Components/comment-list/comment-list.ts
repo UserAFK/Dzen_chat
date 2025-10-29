@@ -12,7 +12,8 @@ import { Observable } from 'rxjs';
   imports:[ DatePipe, CommentFormComponent ,CommonModule]
 })
 export class CommentListComponent implements OnInit {
-  comments$!: Observable< {'comments':Comment[]}>;
+  // comments$!: Observable< {'comments':Comment[]}>;
+  comments$!: Observable< Comment[]>;
   page = 1;
   orderBy = 'createdAt';
   order = 'desc';
