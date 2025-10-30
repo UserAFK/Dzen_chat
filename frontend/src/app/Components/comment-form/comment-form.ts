@@ -42,11 +42,8 @@ export class CommentFormComponent implements OnInit{
     });
     if (this.selectedFile) formData.append('file', this.selectedFile);
 
-    this.service.addComment(formData).subscribe({
-      next: () => {
-        this.form!.reset();
-        this.commentAdded.emit();
-      }
-    });
+    this.service.addComment(formData).subscribe();
+    this.form!.reset();
+    this.commentAdded.emit();
   }
 }

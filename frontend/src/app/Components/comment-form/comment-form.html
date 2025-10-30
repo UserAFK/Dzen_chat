@@ -1,10 +1,33 @@
-<form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
-  <input formControlName="username" placeholder="User name" />
-  <input formControlName="email" placeholder="Email" />
-  <input formControlName="homepage" placeholder="Homepage (optional)" />
-  <textarea formControlName="content" placeholder="Message..."></textarea>
 
-  <input type="file" (change)="onFileSelected($event)" />
-  <button type="submit" [disabled]="form!.invalid">Send</button>
+<form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3 bg-white p-6 rounded-xl shadow-md max-w-md">
+  <input
+    formControlName="username"
+    placeholder="User name"
+    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+  />
+  <input
+    formControlName="email"
+    placeholder="Email"
+    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+  />
+  <input
+    formControlName="homepage"
+    placeholder="Homepage (optional)"
+    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+  />
+  <textarea
+    formControlName="content"
+    placeholder="Message..."
+    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
+  ></textarea>
+
+  <input type="file" (change)="onFileSelected($event)" class="block w-full text-gray-600" />
+
+  <button
+    type="submit"
+    [disabled]="form!.invalid"
+    class="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition"
+  >
+    Send
+  </button>
 </form>
-

@@ -1,23 +1,53 @@
-<app-comment-form (commentAdded)="onCommentAdded()"></app-comment-form>
+<!-- <app-comment-form (commentAdded)="onCommentAdded()"></app-comment-form> -->
+<div class="min-h-screen bg-gray-50 p-4 sm:p-8 font-['Inter'] relative">
+  <header class="mb-6 flex justify-between items-center">
+    <h1 class="text-3xl font-extrabold text-gray-900">Project Comments</h1>
+    <button (click)="openForm()"
+      class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-xl shadow-lg transition duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50">
+      Add New Comment
+    </button>
+  </header>
 
-<table>
-  <thead>
-    <tr>
-      <th (click)="toggleSort('username')">User</th>
-      <th (click)="toggleSort('email')">Email</th>
-      <th>Date</th>
-      <th>File</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- <tr *ngFor="let c of (comments$ | async)?.comments"> -->
-    <tr *ngFor="let c of comments$ | async">
-      <td>{{ c.username }}</td>
-      <td>{{ c.email }}</td>
-      <td>{{ c.createdAt | date:'short' }}</td>
-      <td>
-        <button *ngIf="c.fileType" (click)="download(c)">Download</button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+  <table class="min-w-full border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+    <thead class="bg-gray-100 text-gray-700">
+      <tr>
+        <th (click)="toggleSort('username')" class="py-2 px-4 cursor-pointer hover:bg-gray-200">User</th>
+        <th (click)="toggleSort('email')" class="py-2 px-4 cursor-pointer hover:bg-gray-200">Email</th>
+        <th class="py-2 px-4">Date</th>
+        <th class="py-2 px-4">File</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let c of comments$ | async" (click)="goToComment(c.id)" class="border-t hover:bg-gray-50 transition">
+        <td class="py-2 px-4">{{ c.username }}</td>
+        <td class="py-2 px-4">{{ c.email }}</td>
+        <td class="py-2 px-4">{{ c.createdAt | date:'short' }}</td>
+        <td class="py-2 px-4 text-center" *ngIf="c.fileType" >
+          Attached {{c.fileType}}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+    <div *ngIf="showForm()">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-opacity-75 transition-opacity"
+             (click)="closeForm()">
+
+
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg transform transition-all scale-100 opacity-100"
+               (click)="$event.stopPropagation()">
+
+            <button (click)="closeForm()"
+                    class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <app-comment-form (commentAdded)="onCommentAdded()"></app-comment-form>
+
+          </div>
+        </div>
+        </div>
+</div>
