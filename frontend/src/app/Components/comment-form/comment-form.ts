@@ -19,8 +19,7 @@ export class CommentFormComponent implements OnInit {
 
   @ViewChild('contentArea') contentArea!: ElementRef<HTMLTextAreaElement>;
 
-
-  constructor(private fb: FormBuilder, private service: CommentsService,private signalrService:SignalrService) { }
+  constructor(private fb: FormBuilder, private service: CommentsService, private signalrService: SignalrService) { }
   ngOnInit(): void {
     this.form = this.fb.group({
       username: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9]+$/)]],
@@ -34,6 +33,7 @@ export class CommentFormComponent implements OnInit {
   onFileSelected(event: any) {
     this.selectedFile = event.target.files[0];
   }
+  
   applyItalics(): void {
     const textarea = this.contentArea.nativeElement;
     const start = textarea.selectionStart;
@@ -75,15 +75,7 @@ export class CommentFormComponent implements OnInit {
     });
     if (this.selectedFile) formData.append('file', this.selectedFile);
 
-    //remove switch
-    switch (this.parentCommentId){
-      case undefined:
-        this.service.addComment(formData).subscribe();        
-        break;
-      default:
-        this.signalrService.sendReply(this.form.getRawValue() as Comment);
-        break;
-    }
+    this.signalrService.sendReply(this.form.getRawValue() as Comment);
     this.form!.reset();
     this.commentAdded.emit();
   }

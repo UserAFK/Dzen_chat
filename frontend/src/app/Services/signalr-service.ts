@@ -1,26 +1,22 @@
 import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { Comment } from '../Models/Comment';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SignalrService {
   private readonly hubConnection: HubConnection;
-
+  private basePath = environment.basePath;
   constructor() {
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl('https://localhost:7242/commentHub')
+      .withUrl(`${this.basePath}/commentHub`)
       .build();
   }
 
   getHubConnection() {
     return this.hubConnection;
-  }
-  async test() {
-    this.hubConnection.invoke('Test', 'hello')
-      .catch(err => console.error('Test failed:', err));
-
   }
 
   async connect() {
@@ -31,9 +27,13 @@ export class SignalrService {
     }
   }
 
-  async disconect(id:string) {
+  async disconect(id: string) {
     this.hubConnection.invoke('LeaveCommentGroup', id)
     await this.hubConnection.stop();
+  }
+
+  leaveGroup(id: string) {
+    this.hubConnection.invoke('LeaveCommentGroup', id)
   }
 
   async sendReply(comment: Comment) {
