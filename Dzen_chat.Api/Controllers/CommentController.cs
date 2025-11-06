@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Dzen_chat.Api.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/[controller]")]
 public class CommentController(CommentService commentService, FileService fileService) : ControllerBase
 {
 

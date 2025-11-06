@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommentsService } from '../../Services/comments-service';
 import { CommonModule, DatePipe } from '@angular/common';
@@ -16,8 +16,8 @@ import { SignalrService } from '../../Services/signalr-service';
   imports: [CommonModule, RouterModule, DatePipe, CommentFormComponent, ReplyCommentComponent]
 })
 export class SelectedCommentComponent implements OnInit, OnDestroy {
-  isLoaded:boolean = false;
-  comment$: BehaviorSubject<SelectedComment | null> = new BehaviorSubject<SelectedComment | null>(null);;
+  isLoaded = signal<boolean>(false);
+  comment$: BehaviorSubject<SelectedComment | null> = new BehaviorSubject<SelectedComment | null>(null);
   private id!: string;
 
   constructor(private route: ActivatedRoute,
@@ -55,13 +55,13 @@ export class SelectedCommentComponent implements OnInit, OnDestroy {
       this.signalrService.getHubConnection().on('ReceiveComment',
         (comment: SelectedComment) => {
           this.comment$.next(comment)
-          this.isLoaded = true;
+          this.isLoaded.set(true);
         });
 
       this.signalrService.getHubConnection().on('JoinedCommentGroup',
         (comment: SelectedComment) => {
           this.comment$.next(comment)
-          this.isLoaded = true;
+          this.isLoaded.set(true);
         })
 
       this.signalrService.joinCommentGroup(this.id);

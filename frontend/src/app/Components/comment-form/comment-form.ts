@@ -75,7 +75,14 @@ export class CommentFormComponent implements OnInit {
     });
     if (this.selectedFile) formData.append('file', this.selectedFile);
 
-    this.signalrService.sendReply(this.form.getRawValue() as Comment);
+    switch (this.parentCommentId) {
+      case undefined:
+        this.service.addComment(formData).subscribe();
+        break;
+      default:
+        this.signalrService.sendReply(this.form.getRawValue() as Comment);
+        break;
+    }
     this.form!.reset();
     this.commentAdded.emit();
   }

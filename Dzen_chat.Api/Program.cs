@@ -53,15 +53,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseCors("LocalPolicy");
 app.UseHsts();
 
-app.UseResponseCaching();
 app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
-app.MapHub<CommentHub>("/commentHub");
-app.CreateDatabase();
+app.UseResponseCaching();
+app.UseCors("LocalPolicy");
 
-app.Logger.LogInformation("Dzen chat started");
+app.UseAuthorization();
+
+app.MapControllers();
+app.MapHub<CommentHub>("/commentHub")
+    .RequireCors("LocalPolicy");
+app.CreateDatabase();
 app.Run();
