@@ -4,11 +4,12 @@ import { CommentsService } from '../../Services/comments-service';
 import { CommonModule } from '@angular/common';
 import { SignalrService } from '../../Services/signalr-service';
 import { Comment } from '../../Models/Comment';
+import { RecaptchaModule } from 'ng-recaptcha';
 
 @Component({
   standalone: true,
   selector: 'app-comment-form',
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule,RecaptchaModule],
   templateUrl: './comment-form.html'
 })
 export class CommentFormComponent implements OnInit {
@@ -16,6 +17,7 @@ export class CommentFormComponent implements OnInit {
   @Output() commentAdded = new EventEmitter<void>();
   selectedFile?: File;
   form!: FormGroup;
+  siteKey:string ='6LdnUwQsAAAAADFzg6fX9dzRzdXz6L80h_zwOZVb';
 
   @ViewChild('contentArea') contentArea!: ElementRef<HTMLTextAreaElement>;
 
@@ -26,7 +28,8 @@ export class CommentFormComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       homepage: [''],
       content: ['', Validators.required],
-      parentCommentId: [this.parentCommentId ?? null]
+      parentCommentId: [this.parentCommentId ?? null],
+      recaptcha: ['', Validators.required]
     });
   }
 
@@ -63,6 +66,15 @@ export class CommentFormComponent implements OnInit {
         textarea.selectionStart = start + 3;
         textarea.selectionEnd = end + 3;
       }, 0);
+    }
+  }
+
+  onCaptchaResolved(token: string | null) {
+    if (token) {
+      this.form.get('recaptcha')?.setValue(token);
+      this.form.get('recaptcha')?.updateValueAndValidity();
+    } else {
+      this.form.get('recaptcha')?.reset();
     }
   }
 

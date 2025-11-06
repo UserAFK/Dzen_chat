@@ -1,5 +1,6 @@
 ﻿using Application;
 using Application.Dto;
+using Dzen_chat.Api.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Dzen_chat.Api;
@@ -15,6 +16,10 @@ public class CommentHub : Hub
 
     public async Task SendReply(CommentDto commentCreateDto)
     {
+        if (!await CaptchaService.VerifyRecaptchaAsync(commentCreateDto.Recaptcha))
+        {
+            throw new UnauthorizedAccessException("Recaptcha verification failed.");
+        }
         await _commentService.AddCommentAsync(commentCreateDto);
         if (commentCreateDto.ParentCommentId.HasValue)
         {
@@ -33,7 +38,7 @@ public class CommentHub : Hub
             await Clients.Caller.SendAsync("Error", $"Comment with ID {commentId} not found.");
             return;
         }
-        
+
         await Groups.AddToGroupAsync(Context.ConnectionId, GetGroupName(id));
         await Clients.Caller.SendAsync("JoinedCommentGroup", comment);
     }
@@ -49,5 +54,4 @@ public class CommentHub : Hub
     }
 
     private string GetGroupName(Guid commentId) => $"comment-{commentId}";
-
 }

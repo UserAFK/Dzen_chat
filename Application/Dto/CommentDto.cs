@@ -10,4 +10,5 @@ public class CommentDto
     public string? HomePage { get; set; }
     public Guid? ParentCommentId { get; set; }
     public IFormFile? File { get; set; }
+    public string Recaptcha { get; set; } = string.Empty;
 }
