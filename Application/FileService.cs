@@ -44,7 +44,7 @@ public class FileService(IAppDbContext context)
     {
         var fileData = await context.Comments
             .Where(c => c.Id == commentId)
-            .Select(c => new { c.FileType, c.FileData})
+            .Select(c => new { c.FileType, c.FileData })
             .FirstOrDefaultAsync();
 
         if (fileData == null) return (string.Empty, Array.Empty<byte>(), string.Empty);

@@ -16,7 +16,7 @@ namespace Dzen_chat.Api.Extentions
                 {
                     context.Database.EnsureDeleted();
                     context.Database.EnsureCreated();
-                    DbSeeder.Seed(context); 
+                    DbSeeder.Seed(context);
                     app.Logger.LogInformation("Database checked and ready.");
                 }
                 catch (Exception ex)
@@ -25,6 +25,6 @@ namespace Dzen_chat.Api.Extentions
                 }
             }
         }
-        
+
     }
 }

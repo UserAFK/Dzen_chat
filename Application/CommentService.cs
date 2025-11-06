@@ -42,7 +42,7 @@ public class CommentService
         };
         query = query
             .AsNoTracking()
-            .Select(c=>new Comment()
+            .Select(c => new Comment()
             {
                 Id = c.Id,
                 Content = c.Content,

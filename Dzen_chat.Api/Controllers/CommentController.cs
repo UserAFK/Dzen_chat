@@ -13,14 +13,14 @@ public class CommentController(CommentService commentService, FileService fileSe
     public async Task<IActionResult> GetComments([FromQuery] int? page, string? orderBy, string? order)
     {
         var comments = await commentService.GetCommentsAsync(page, orderBy, order);
-        return Ok( comments );
+        return Ok(comments);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetCommentById(Guid id)
     {
         var comment = await commentService.GetCommentWithReplies(id);
-        return Ok( comment );
+        return Ok(comment);
     }
 
     [HttpPost]
