@@ -24,6 +24,7 @@ public class CommentService
     {
         int pageSize = 25;
         var query = _context.Comments
+            .Where(c => c.ParentCommentId == null)
             .Skip(page.HasValue && page.Value > 0 ? (page.Value - 1) * pageSize : 0)
             .Take(pageSize);
         query = (orderBy?.ToLower()) switch
@@ -55,11 +56,11 @@ public class CommentService
         return await query.ToListAsync();
     }
 
-    public async Task<Comment?> GetCommentWithLimitedReplies(Guid targetCommentId)
+    public async Task<Comment?> GetCommentWithReplies(Guid selectedCommentId)
     {
         var commentProjection = await _context.Comments
             .AsNoTracking()
-            .Where(c => c.Id == targetCommentId)
+            .Where(c => c.Id == selectedCommentId)
             .Select(c => new Comment
             {
                 Id = c.Id,

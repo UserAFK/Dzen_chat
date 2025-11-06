@@ -1,9 +1,9 @@
-import { Component,  OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommentsService } from '../../Services/comments-service';
 import { Comment } from '../../Models/Comment';
 import { CommonModule, DatePipe } from '@angular/common'
 import { CommentFormComponent } from '../comment-form/comment-form';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Router } from '@angular/router';
 
 @Component({
@@ -13,7 +13,7 @@ import { Router } from '@angular/router';
   imports: [DatePipe, CommentFormComponent, CommonModule]
 })
 export class CommentListComponent implements OnInit {
-  comments$!: Observable<Comment[]>;
+  comments$: BehaviorSubject<Comment[]> = new BehaviorSubject<Comment[]>([]);
   page = 1;
   orderBy = 'createdAt';
   order = 'desc';
@@ -25,25 +25,23 @@ export class CommentListComponent implements OnInit {
   }
 
   load() {
-    this.comments$ = this.service.getComments(this.page, this.orderBy, this.order);
-
+    this.service.getComments(this.page, this.orderBy, this.order)
+      .subscribe(data => this.comments$.next(data))
   }
 
   onCommentAdded() {
     this.load();
     this.closeForm();
   }
-  
+
   showForm = signal<boolean>(false);
-  
+
   openForm(): void {
     this.showForm.set(true);
   }
 
-  /**
-   * Closes the comment form modal.
-   */
   closeForm(): void {
+    this.load();
     this.showForm.set(false);
   }
 
@@ -56,6 +54,7 @@ export class CommentListComponent implements OnInit {
     this.orderBy = field;
     this.load();
   }
+  
   goToComment(id: string) {
     this.router.navigate(['/comments', id]);
   }

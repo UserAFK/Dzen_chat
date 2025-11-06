@@ -1,7 +1,9 @@
-import { Component, ElementRef, EventEmitter, Input, input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommentsService } from '../../Services/comments-service';
 import { CommonModule } from '@angular/common';
+import { SignalrService } from '../../Services/signalr-service';
+import { Comment } from '../../Models/Comment';
 
 @Component({
   standalone: true,
@@ -17,8 +19,7 @@ export class CommentFormComponent implements OnInit {
 
   @ViewChild('contentArea') contentArea!: ElementRef<HTMLTextAreaElement>;
 
-
-  constructor(private fb: FormBuilder, private service: CommentsService) { }
+  constructor(private fb: FormBuilder, private service: CommentsService, private signalrService: SignalrService) { }
   ngOnInit(): void {
     this.form = this.fb.group({
       username: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9]+$/)]],
@@ -32,6 +33,7 @@ export class CommentFormComponent implements OnInit {
   onFileSelected(event: any) {
     this.selectedFile = event.target.files[0];
   }
+  
   applyItalics(): void {
     const textarea = this.contentArea.nativeElement;
     const start = textarea.selectionStart;
@@ -73,7 +75,14 @@ export class CommentFormComponent implements OnInit {
     });
     if (this.selectedFile) formData.append('file', this.selectedFile);
 
-    this.service.addComment(formData).subscribe();
+    switch (this.parentCommentId) {
+      case undefined:
+        this.service.addComment(formData).subscribe();
+        break;
+      default:
+        this.signalrService.sendReply(this.form.getRawValue() as Comment);
+        break;
+    }
     this.form!.reset();
     this.commentAdded.emit();
   }

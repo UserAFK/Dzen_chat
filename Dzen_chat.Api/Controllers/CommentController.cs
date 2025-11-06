@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Dzen_chat.Api.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/[controller]")]
 public class CommentController(CommentService commentService, FileService fileService) : ControllerBase
 {
 
@@ -19,7 +19,7 @@ public class CommentController(CommentService commentService, FileService fileSe
     [HttpGet("{id}")]
     public async Task<IActionResult> GetCommentById(Guid id)
     {
-        var comment = await commentService.GetCommentWithLimitedReplies(id);
+        var comment = await commentService.GetCommentWithReplies(id);
         return Ok( comment );
     }
 
