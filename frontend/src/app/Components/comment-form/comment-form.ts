@@ -4,7 +4,7 @@ import { CommentsService } from '../../Services/comments-service';
 import { CommonModule } from '@angular/common';
 import { SignalrService } from '../../Services/signalr-service';
 import { Comment } from '../../Models/Comment';
-import { RecaptchaModule } from 'ng-recaptcha';
+import { RecaptchaModule, RecaptchaComponent  } from 'ng-recaptcha';
 
 @Component({
   standalone: true,
@@ -15,6 +15,7 @@ import { RecaptchaModule } from 'ng-recaptcha';
 export class CommentFormComponent implements OnInit {
   @Input() parentCommentId?: string;
   @Output() commentAdded = new EventEmitter<void>();
+  @ViewChild(RecaptchaComponent) recaptchaComponent!: RecaptchaComponent;
   selectedFile?: File;
   form!: FormGroup;
   siteKey: string = '6LdnUwQsAAAAADFzg6fX9dzRzdXz6L80h_zwOZVb';
@@ -115,6 +116,7 @@ export class CommentFormComponent implements OnInit {
         break;
     }
     this.form!.reset();
+    this.recaptchaComponent.reset();
     this.selectedFile = undefined;
     this.commentAdded.emit();
   }

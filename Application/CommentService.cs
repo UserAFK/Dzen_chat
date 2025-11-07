@@ -57,6 +57,7 @@ public class CommentService
             .AsNoTracking()
             .Where(c => c.Id == selectedCommentId)
             .Include(c => c.User)
+            .Include(c => c.Replies)
             .Select(c => new CommentDto
             {
                 Id = c.Id,
@@ -102,7 +103,8 @@ public class CommentService
         var newComment = new Comment()
         {
             Id = comment.Id.Value,
-            Content = comment.Content
+            Content = comment.Content,
+            ParentCommentId = comment.ParentCommentId
         };
         newComment.CreatedAt = DateTime.UtcNow;
         var user = new User();
