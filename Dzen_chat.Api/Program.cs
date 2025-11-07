@@ -7,10 +7,13 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    //.WriteTo.MSSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    //.WriteTo.MSSqlServer(connectionString,
     //    sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
     //    {
     //        TableName = "Logs",
@@ -27,7 +30,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("LocalPolicy",
         builder =>
         {
-            builder.WithOrigins("http://localhost:4200")
+            builder.WithOrigins(
+                "http://localhost:4200",
+                "http://dzenchat-web",
+                "http://frontend")
                    .AllowAnyMethod()
                    .AllowAnyHeader()
                    .AllowCredentials();
@@ -39,7 +45,7 @@ builder.Services.AddScoped<FileService>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<FileProcessingService>();
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 builder.Host.UseSerilog();
 
 var app = builder.Build();

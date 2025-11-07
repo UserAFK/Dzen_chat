@@ -8,10 +8,9 @@ import { environment } from '../../environments/environment';
 })
 export class SignalrService {
   private readonly hubConnection: HubConnection;
-  private basePath = environment.basePath;
   constructor() {
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl(`${this.basePath}/commentHub`)
+      .withUrl(`${environment.apiBaseUrl}/commentHub`)
       .build();
   }
 

@@ -3,10 +3,11 @@ import { Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Comment } from '../Models/Comment';
 import { SelectedComment } from '../Models/SelectedComment';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class CommentsService {
-  private baseUrl = 'https://localhost:7242'
+  private baseUrl = environment.apiBaseUrl;
   private apiUrl = `${this.baseUrl}/api/comment`;
 
   constructor(private http: HttpClient) { }
