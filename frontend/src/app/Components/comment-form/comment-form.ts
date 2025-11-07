@@ -9,7 +9,7 @@ import { RecaptchaModule } from 'ng-recaptcha';
 @Component({
   standalone: true,
   selector: 'app-comment-form',
-  imports: [ReactiveFormsModule, CommonModule,RecaptchaModule],
+  imports: [ReactiveFormsModule, CommonModule, RecaptchaModule],
   templateUrl: './comment-form.html'
 })
 export class CommentFormComponent implements OnInit {
@@ -17,7 +17,7 @@ export class CommentFormComponent implements OnInit {
   @Output() commentAdded = new EventEmitter<void>();
   selectedFile?: File;
   form!: FormGroup;
-  siteKey:string ='6LdnUwQsAAAAADFzg6fX9dzRzdXz6L80h_zwOZVb';
+  siteKey: string = '6LdnUwQsAAAAADFzg6fX9dzRzdXz6L80h_zwOZVb';
 
   @ViewChild('contentArea') contentArea!: ElementRef<HTMLTextAreaElement>;
 
@@ -81,10 +81,15 @@ export class CommentFormComponent implements OnInit {
   submit() {
     if (this.form!.invalid) return;
 
+    const newId = crypto.randomUUID();
+    let newComment = this.form.getRawValue() as Comment;
+    newComment.id = newId;
+    newComment.parentCommentId = this.parentCommentId;
     const formData = new FormData();
     Object.entries(this.form!.value).forEach(([key, val]) => {
       if (val !== null && val !== undefined) formData.append(key, val.toString());
     });
+    formData.append("id", newId);
     if (this.selectedFile) formData.append('file', this.selectedFile);
 
     switch (this.parentCommentId) {
@@ -92,10 +97,12 @@ export class CommentFormComponent implements OnInit {
         this.service.addComment(formData).subscribe();
         break;
       default:
-        this.signalrService.sendReply(this.form.getRawValue() as Comment);
+        this.signalrService.sendReply(newComment);
+        if (this.selectedFile) this.service.addFile(this.selectedFile, newId).subscribe();
         break;
     }
     this.form!.reset();
+    this.selectedFile = undefined;
     this.commentAdded.emit();
   }
 }

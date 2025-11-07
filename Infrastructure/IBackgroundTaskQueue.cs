@@ -4,7 +4,7 @@ namespace Infrastructure;
 
 public interface IBackgroundTaskQueue
 {
-    void QueueFile(FileProcessingItem item);
+    void EnqueueFile(FileProcessingItem item);
     bool TryDequeue(out FileProcessingItem? item);
 }
 

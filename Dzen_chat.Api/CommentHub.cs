@@ -1,6 +1,5 @@
 ﻿using Application;
 using Application.Dto;
-using Dzen_chat.Api.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Dzen_chat.Api;

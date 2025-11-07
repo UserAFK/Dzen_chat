@@ -24,7 +24,6 @@ public class FileProcessingService : BackgroundService
             {
                 using var scope = _scopeFactory.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-
                 try
                 {
                     byte[] processedData = item.FileType.StartsWith("image/")
@@ -35,35 +34,43 @@ public class FileProcessingService : BackgroundService
                     if (comment != null)
                     {
                         comment.FileData = processedData;
+                        comment.FileType = item.FileType;
                         await db.SaveChangesAsync();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"❌ File processing failed: {ex.Message}");
+                    Console.WriteLine($"File processing failed: {ex.Message}");
                 }
             }
 
-            await Task.Delay(500, stoppingToken); // невелика пауза
+            await Task.Delay(500, stoppingToken);
         }
     }
 
     private Task<byte[]> ProcessImageAsync(byte[] bytes)
     {
-        using var ms = new MemoryStream(bytes);
-        using var image = Image.FromStream(ms);
-
-        if (image.Width <= 320 && image.Height <= 240)
-            return Task.FromResult(bytes);
-
-        double ratio = Math.Min(320.0 / image.Width, 240.0 / image.Height);
-        int newWidth = (int)(image.Width * ratio);
-        int newHeight = (int)(image.Height * ratio);
-
-        using var resized = new Bitmap(image, new Size(newWidth, newHeight));
-        using var output = new MemoryStream();
-        resized.Save(output, ImageFormat.Png);
-
-        return Task.FromResult(output.ToArray());
+        using var stream = new MemoryStream(bytes);
+        using var image = Image.FromStream(stream);
+        int width = image.Width;
+        int height = image.Height;
+        if (width > 320 || height > 240)
+        {
+            var ratioX = 320.0 / width;
+            var ratioY = 240.0 / height;
+            var ratio = Math.Min(ratioX, ratioY);
+            var newWidth = (int)(width * ratio);
+            var newHeight = (int)(height * ratio);
+            using var resized = new Bitmap(image, new Size(newWidth, newHeight));
+            using var output = new MemoryStream();
+            resized.Save(output, ImageFormat.Png);
+            return Task.FromResult(output.ToArray());
+        }
+        else
+        {
+            using var ms = new MemoryStream();
+            image.Save(ms, ImageFormat.Png);
+            return Task.FromResult(ms.ToArray());
+        }
     }
 }

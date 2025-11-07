@@ -20,6 +20,7 @@ export class SignalrService {
   }
 
   async connect() {
+    if (this.hubConnection.connectionId) return;
     try {
       await this.hubConnection.start();
     } catch (error) {

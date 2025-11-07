@@ -11,13 +11,13 @@ public class CommentService
 {
     private readonly IAppDbContext _context;
     private readonly IMapper _mapper;
-    private readonly IBackgroundTaskQueue _queue;
+    private readonly FileService _fileService;
 
-    public CommentService(IAppDbContext context, IMapper mapper, IBackgroundTaskQueue queue)
+    public CommentService(IAppDbContext context, IMapper mapper, FileService fileService)
     {
         _context = context;
         _mapper = mapper;
-        _queue = queue;
+        _fileService = fileService;
     }
 
     public async Task<List<Comment>> GetCommentsAsync(int? page, string? orderBy, string? order)
@@ -115,16 +115,7 @@ public class CommentService
 
         if (comment.File != null)
         {
-            using var ms = new MemoryStream();
-            await comment.File.CopyToAsync(ms);
-
-            var item = new FileProcessingItem(
-                newComment.Id,
-                comment.File.ContentType,
-                ms.ToArray()
-            );
-
-            _queue.QueueFile(item);
+            _fileService.QueueFile(newComment.Id, comment.File);
         }
     }
 
