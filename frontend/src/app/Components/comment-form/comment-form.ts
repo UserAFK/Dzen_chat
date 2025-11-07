@@ -90,7 +90,10 @@ export class CommentFormComponent implements OnInit {
 
   submit() {
     if (this.form!.invalid) return;
-
+    if (this.hasUnclosedTags(this.form!.get('content')?.value)) {
+      window.alert('Input has unclosed tags.')
+      return;
+    }
     const newId = crypto.randomUUID();
     let newComment = this.form.getRawValue() as Comment;
     newComment.id = newId;
@@ -115,4 +118,26 @@ export class CommentFormComponent implements OnInit {
     this.selectedFile = undefined;
     this.commentAdded.emit();
   }
+
+  private hasUnclosedTags(value: string): boolean {
+    if (!value) return false;
+    const tags = ['i', 'strong', 'code', 'a'];
+    const unclosed: string[] = [];
+
+    for (const tag of tags) {
+      const openCount = (value.match(new RegExp(`<${tag}[^>]*>`, 'g')) || []).length;
+      const closeCount = (value.match(new RegExp(`</${tag}>`, 'g')) || []).length;
+
+      if (openCount > closeCount) {
+        unclosed.push(tag);
+      }
+    }
+
+    if (unclosed.length > 0) {
+      console.warn('Unclosed tags:', unclosed.join(', '));
+      return true;
+    }
+    return false;
+  }
+
 }
