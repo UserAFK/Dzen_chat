@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, OnInit, Output, SecurityContext } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import { Comment } from '../../Models/Comment';
 
 @Component({
@@ -9,10 +10,14 @@ import { Comment } from '../../Models/Comment';
   templateUrl: './reply-comment.html',
   imports: [ReactiveFormsModule, CommonModule]
 })
-export class ReplyCommentComponent {
-  @Input() parentComment?: Comment
+export class ReplyCommentComponent implements OnInit {
+  @Input() comment?: Comment
   @Output() replyAdded = new EventEmitter<void>();
+  safeContent!: string | null;
 
-  constructor() { }
+  constructor(private sanitizer: DomSanitizer) { }
 
+  ngOnInit() {
+    this.safeContent = this.sanitizer.sanitize(SecurityContext.HTML, this.comment!.content);
+  }
 }

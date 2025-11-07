@@ -37,37 +37,47 @@ export class CommentFormComponent implements OnInit {
     this.selectedFile = event.target.files[0];
   }
   
-  applyItalics(): void {
+  applyTag(tag: string) {
     const textarea = this.contentArea.nativeElement;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentContent = textarea.value;
 
-    if (start < end) {
+    if (start >= end) return;
+
       const selectedText = currentContent.substring(start, end);
-      if (currentContent.substring(start - 3, start) === '<i>' && currentContent.substring(end, end + 4) === '</i>') {
 
-        const newContent =
-          currentContent.substring(0, start - 3) +
+    const openTag = tag === 'a' ? `<${tag} href="${selectedText}" title="${selectedText}">` : `<${tag}>`;
+    const closeTag = `</${tag}>`;
+
+    const hasOpen = currentContent.substring(start - openTag.length, start) === openTag;
+    const hasClose = currentContent.substring(end, end + closeTag.length) === closeTag;
+
+    let newContent: string;
+
+    if (hasOpen && hasClose && tag !== 'a') {
+      newContent =
+        currentContent.substring(0, start - openTag.length) +
           selectedText +
-          currentContent.substring(end + 4);
-
-        this.form.get('content')!.setValue(newContent);
+        currentContent.substring(end + closeTag.length);
       } else {
-        const newContent =
+      newContent =
           currentContent.substring(0, start) +
-          `<i>${selectedText}</i>` +
+        openTag +
+        selectedText +
+        closeTag +
           currentContent.substring(end);
+    }
 
         this.form.get('content')!.setValue(newContent);
-      }
+
       setTimeout(() => {
         textarea.focus();
-        textarea.selectionStart = start + 3;
-        textarea.selectionEnd = end + 3;
+      textarea.selectionStart = start + openTag.length;
+      textarea.selectionEnd = end + openTag.length;
       }, 0);
     }
-  }
+
 
   onCaptchaResolved(token: string | null) {
     if (token) {
