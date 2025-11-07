@@ -36,7 +36,7 @@ export class CommentFormComponent implements OnInit {
   onFileSelected(event: any) {
     this.selectedFile = event.target.files[0];
   }
-  
+
   applyTag(tag: string) {
     const textarea = this.contentArea.nativeElement;
     const start = textarea.selectionStart;
@@ -45,7 +45,7 @@ export class CommentFormComponent implements OnInit {
 
     if (start >= end) return;
 
-      const selectedText = currentContent.substring(start, end);
+    const selectedText = currentContent.substring(start, end);
 
     const openTag = tag === 'a' ? `<${tag} href="${selectedText}" title="${selectedText}">` : `<${tag}>`;
     const closeTag = `</${tag}>`;
@@ -58,25 +58,25 @@ export class CommentFormComponent implements OnInit {
     if (hasOpen && hasClose && tag !== 'a') {
       newContent =
         currentContent.substring(0, start - openTag.length) +
-          selectedText +
+        selectedText +
         currentContent.substring(end + closeTag.length);
-      } else {
+    } else {
       newContent =
-          currentContent.substring(0, start) +
+        currentContent.substring(0, start) +
         openTag +
         selectedText +
         closeTag +
-          currentContent.substring(end);
+        currentContent.substring(end);
     }
 
-        this.form.get('content')!.setValue(newContent);
+    this.form.get('content')!.setValue(newContent);
 
-      setTimeout(() => {
-        textarea.focus();
+    setTimeout(() => {
+      textarea.focus();
       textarea.selectionStart = start + openTag.length;
       textarea.selectionEnd = end + openTag.length;
-      }, 0);
-    }
+    }, 0);
+  }
 
 
   onCaptchaResolved(token: string | null) {

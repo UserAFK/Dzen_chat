@@ -9,4 +9,5 @@ public class AppDbContext : DbContext, IAppDbContext
     {
     }
     public DbSet<Comment> Comments { get; set; } = null!;
+    public DbSet<User> Users { get; set; } = null!;
 }

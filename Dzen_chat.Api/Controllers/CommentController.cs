@@ -25,7 +25,7 @@ public class CommentController(CommentService commentService) : ControllerBase
 
     [HttpPost]
     [RequestSizeLimit(2_000_000)]
-    public async Task<IActionResult> AddComment([FromForm] CommentDto comment)
+    public async Task<IActionResult> AddComment([FromForm] CommentNewDto comment)
     {
         await commentService.AddCommentAsync(comment);
         return Ok();

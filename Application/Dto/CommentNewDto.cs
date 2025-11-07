@@ -2,7 +2,7 @@
 
 namespace Application.Dto;
 
-public class CommentDto
+public class CommentNewDto
 {
     public Guid? Id { get; set; }
     public string? Content { get; set; }
@@ -14,6 +14,4 @@ public class CommentDto
     public Guid? ParentCommentId { get; set; }
     public IFormFile? File { get; set; }
     public string Recaptcha { get; set; } = string.Empty;
-    public CommentReplyDto? ParentComment { get; set; }
-    public List<CommentReplyDto> Replies { get; set; } = new();
 }

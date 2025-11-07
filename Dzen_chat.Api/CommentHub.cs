@@ -1,5 +1,6 @@
 ﻿using Application;
 using Application.Dto;
+using Dzen_chat.Api.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Dzen_chat.Api;
@@ -13,17 +14,17 @@ public class CommentHub : Hub
         _commentService = commentService;
     }
 
-    public async Task SendReply(CommentDto commentCreateDto)
+    public async Task SendReply(CommentNewDto commentNewDto)
     {
-        if (!await CaptchaService.VerifyRecaptchaAsync(commentCreateDto.Recaptcha))
+        if (!await CaptchaService.VerifyRecaptchaAsync(commentNewDto.Recaptcha))
         {
             throw new UnauthorizedAccessException("Recaptcha verification failed.");
         }
-        await _commentService.AddCommentAsync(commentCreateDto);
-        if (commentCreateDto.ParentCommentId.HasValue)
+        await _commentService.AddCommentAsync(commentNewDto);
+        if (commentNewDto.ParentCommentId.HasValue)
         {
-            var updatedComment = await _commentService.GetCommentWithReplies(commentCreateDto.ParentCommentId.Value);
-            await Clients.Group(GetGroupName(commentCreateDto.ParentCommentId.Value))
+            var updatedComment = await _commentService.GetCommentWithReplies(commentNewDto.ParentCommentId.Value);
+            await Clients.Group(GetGroupName(commentNewDto.ParentCommentId.Value))
                 .SendAsync("ReceiveComment", updatedComment);
         }
     }

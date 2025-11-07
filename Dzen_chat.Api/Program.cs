@@ -1,9 +1,7 @@
 using Application;
-using Application.Dto;
 using Dzen_chat.Api;
 using Dzen_chat.Api.Extentions;
 using Infrastructure;
-using Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -23,7 +21,6 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddAutoMapper(c => c.CreateMap<Comment, CommentDto>().ReverseMap());
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
@@ -43,7 +40,6 @@ builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<FileProcessingService>();
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-//options.UseInMemoryDatabase("DzenChatDb"));
 builder.Host.UseSerilog();
 
 var app = builder.Build();
