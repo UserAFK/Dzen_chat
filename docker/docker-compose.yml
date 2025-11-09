@@ -22,6 +22,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       CONNECTION_STRING: "Server=mssql;Database=DzenChatDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      RECAPTCHA__SECRETKEY: "6LfeggQsAAAAANszxO-prC6lvRPIIC_4bR_nITPq"
+      RECAPTCHA__EXPECTEDHOSTNAME: "localhost"
     ports:
       - "7242:8080"
     depends_on:

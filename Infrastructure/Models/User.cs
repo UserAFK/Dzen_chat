@@ -10,4 +10,5 @@ public class User
     [Required]
     public string Email { get; set; } = string.Empty;
     public string? HomePage { get; set; }
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }

@@ -1,5 +1,7 @@
 using Application;
+using Application.misc;
 using Dzen_chat.Api;
+using Dzen_chat.Api.Services;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -33,6 +35,8 @@ builder.Services.AddCors(options =>
         });
 });
 builder.Services.AddResponseCaching();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<CaptchaService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<FileService>();
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
@@ -40,6 +44,8 @@ builder.Services.AddHostedService<FileProcessingService>();
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Host.UseSerilog();
+builder.Services.Configure<RecaptchaSettings>(
+    builder.Configuration.GetSection("Recaptcha"));
 
 var app = builder.Build();
 
@@ -59,4 +65,10 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<CommentHub>("/commentHub")
     .RequireCors("LocalPolicy");
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 app.Run();
