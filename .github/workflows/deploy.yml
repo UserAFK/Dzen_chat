@@ -1,0 +1,46 @@
+name: Deploy DzenChat
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build and push backend
+        run: |
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest ./Dzen_chat.Api
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest
+
+      - name: Deploy backend to Cloud Run
+        run: |
+          gcloud run deploy dzenchat-api \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest \
+            --platform managed \
+            --region europe-west1 \
+            --allow-unauthenticated \
+            --set-env-vars RECAPTCHA__SECRETKEY=${{ secrets.RECAPTCHA_SECRET }},RECAPTCHA__EXPECTEDHOSTNAME=${{ secrets.RECAPTCHA_HOSTNAME }},CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
+
+      - name: Build and push frontend
+        run: |
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest ./frontend
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest
+
+      - name: Deploy frontend to Cloud Run
+        run: |
+          gcloud run deploy dzenchat-web \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest \
+            --platform managed \
+            --region europe-west1 \
+            --allow-unauthenticated
