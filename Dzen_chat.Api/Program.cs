@@ -1,6 +1,5 @@
 using Application;
 using Dzen_chat.Api;
-using Dzen_chat.Api.Extentions;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -13,12 +12,6 @@ var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    //.WriteTo.MSSqlServer(connectionString,
-    //    sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
-    //    {
-    //        TableName = "Logs",
-    //        AutoCreateSqlTable = true
-    //    })
     .CreateLogger();
 
 builder.Services.AddControllers();
@@ -66,5 +59,4 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<CommentHub>("/commentHub")
     .RequireCors("LocalPolicy");
-app.CreateDatabase();
 app.Run();
