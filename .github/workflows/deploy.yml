@@ -1,79 +1,115 @@
-name: Build and Deploy to Cloud Run
+name: Deploy DzenChat to Google Cloud Run
 
 on:
   push:
     branches:
-      - dev
-  workflow_dispatch:
+      - main
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: europe-central2
-  BACKEND_IMAGE: dzenchat-api
-  FRONTEND_IMAGE: dzenchat-web
+  REGION: europe-north1
+  AR_REPO: dzenchat-repo # Назва вашого репозиторію в Artifact Registry
+  DB_CONNECTION_NAME: dzen-chat-477414:europe-north1:dzen-chat-db # Повний ідентифікатор інстансу Cloud SQL
+  # Визначаємо повний шлях до Artifact Registry, використовуючи env.PROJECT_ID
+  REGISTRY_PATH: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: 🧩 Checkout code
-        uses: actions/checkout@v4
+    # 1. Checkout коду
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: 🔑 Set up Google Cloud credentials
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+    # 2. Аутентифікація в GCP (отримуємо токен SA)
+    - name: Authenticate to GCP
+      id: auth
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+        
+    # 3. Налаштування gcloud CLI 
+    - name: Set up gcloud and environment
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+        
+    # --- Docker Setup ---
+    # 4. Встановлення Buildx (потрібен для build-push-action)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: ⚙️ Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+    # 5. Аутентифікація в Artifact Registry (для Docker)
+    - name: Log in to Artifact Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY_PATH }}
+        username: _json_key
+        # Використовуємо JSON-ключ як пароль для входу в Docker (стандартний підхід GCP/AR)
+        password: ${{ secrets.GCP_SA_KEY }}
 
-      - name: 🐳 Configure Docker to use Artifact Registry
-        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev"
+    # --- 6. ЗБИРАННЯ ТА РОЗГОРТАННЯ BACKEND ---
+    - name: Build and Push Backend Image
+      id: backend_build
+      uses: docker/build-push-action@v5
+      with:
+        context: . # Контекст збірки - корінь репозиторію
+        file: ./Dzen_chat.Api/Dockerfile
+        push: true
+        tags: ${{ env.REGISTRY_PATH }}/backend:${{ github.sha }}
+    
+    # Визначаємо URL образу бекенду для кроку розгортання
+    - name: Set Backend Image URL
+      id: backend_image
+      run: echo "url=${{ env.REGISTRY_PATH }}/backend:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      # ---------- BACKEND BUILD ----------
-      - name: 🏗️ Build backend image
-        run: |
-          docker build \
-            -f Dzen_chat.Api/Dockerfile \
-            -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.BACKEND_IMAGE }}:latest" \
-            .
+    - name: Deploy Backend Service to Cloud Run
+      id: backend_deploy
+      uses: 'google-github-actions/deploy-cloudrun@v2'
+      with:
+        service: dzenchat-api
+        region: ${{ env.REGION }}
+        image: ${{ steps.backend_image.outputs.url }} # Використовуємо створений тег
+        flags: --allow-unauthenticated
+        # Підключення до Cloud SQL Proxy
+        cloud_sql_instances: ${{ env.DB_CONNECTION_NAME }} 
+        env_vars: |
+          ASPNETCORE_ENVIRONMENT=Production
+          # З'єднання через 127.0.0.1, оскільки Cloud SQL Proxy працює локально
+          CONNECTION_STRING=Server=127.0.0.1;Database=DzenChatDb;User Id=sa;Password=${{ secrets.DB_SA_PASSWORD }};TrustServerCertificate=True;
+          RECAPTCHA__SECRETKEY=${{ secrets.RECAPTCHA_SECRET_KEY }}
+          RECAPTCHA__EXPECTEDHOSTNAME=${{ steps.backend_deploy.outputs.url }}
+          
+    # --- 7. ЗБИРАННЯ ТА РОЗГОРТАННЯ FRONTEND ---
+    - name: Build and Push Frontend Image
+      id: frontend_build
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: ${{ env.REGISTRY_PATH }}/frontend:${{ github.sha }}
 
-      - name: 📦 Push backend image
-        run: |
-          docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.BACKEND_IMAGE }}:latest"
+    # Визначаємо URL образу фронтенду для кроку розгортання
+    - name: Set Frontend Image URL
+      id: frontend_image
+      run: echo "url=${{ env.REGISTRY_PATH }}/frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      # ---------- FRONTEND BUILD ----------
-      - name: 🏗️ Build frontend image
-        run: |
-          docker build \
-            -f frontend/Dockerfile \
-            -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.FRONTEND_IMAGE }}:latest" \
-            ./frontend
-
-      - name: 📦 Push frontend image
-        run: |
-          docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.FRONTEND_IMAGE }}:latest"
-
-      # ---------- DEPLOY BACKEND ----------
-      - name: 🚀 Deploy backend to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: dzenchat-api
-          region: ${{ env.REGION }}
-          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.BACKEND_IMAGE }}:latest"
-          env_vars: |
-            ASPNETCORE_ENVIRONMENT=Production
-            CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
-            RECAPTCHA__SECRETKEY=${{ secrets.RECAPTCHA_SECRET }}
-            RECAPTCHA__EXPECTEDHOSTNAME=${{ secrets.RECAPTCHA_HOSTNAME }}
-
-      # ---------- DEPLOY FRONTEND ----------
-      - name: 🚀 Deploy frontend to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: dzenchat-web
-          region: ${{ env.REGION }}
-          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.FRONTEND_IMAGE }}:latest"
+    - name: Deploy Frontend Service to Cloud Run
+      id: frontend_deploy
+      uses: 'google-github-actions/deploy-cloudrun@v2'
+      with:
+        service: dzenchat-web
+        region: ${{ env.REGION }}
+        image: ${{ steps.frontend_image.outputs.url }} # Використовуємо створений тег
+        flags: --allow-unauthenticated
+        # Передаємо публічний URL бекенду для конфігурації Nginx/фронтенду
+        env_vars: |
+          API_BASE_URL=${{ steps.backend_deploy.outputs.url }}
+          
+    # 8. Виведення результатів
+    - name: Output URLs
+      run: |
+        echo "Backend URL: ${{ steps.backend_deploy.outputs.url }}"
+        echo "Frontend URL: ${{ steps.frontend_deploy.outputs.url }}"
