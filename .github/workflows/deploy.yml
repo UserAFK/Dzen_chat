@@ -3,15 +3,17 @@ name: Deploy DzenChat to Google Cloud Run
 on:
   push:
     branches:
-      - main
+      - dev
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  # Змінна PROJECT_ID необхідна для кроку Set up gcloud
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} 
   REGION: europe-north1
   AR_REPO: dzenchat-repo # Назва вашого репозиторію в Artifact Registry
   DB_CONNECTION_NAME: dzen-chat-477414:europe-north1:dzen-chat-db # Повний ідентифікатор інстансу Cloud SQL
-  # Визначаємо повний шлях до Artifact Registry, використовуючи env.PROJECT_ID
-  REGISTRY_PATH: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}
+  # ВИПРАВЛЕНО: Визначаємо повний шлях до Artifact Registry, використовуючи secrets.GCP_PROJECT_ID напряму.
+  # Це усуває потенційну помилку ланцюжка env-змінних, коли PROJECT_ID ще не повністю доступний.
+  REGISTRY_PATH: ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPO }}
 
 jobs:
   deploy:
