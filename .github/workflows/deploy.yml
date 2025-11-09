@@ -1,46 +1,79 @@
-name: Deploy DzenChat
+name: Build and Deploy to Cloud Run
 
 on:
   push:
     branches:
       - dev
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: europe-central2
+  BACKEND_IMAGE: dzenchat-api
+  FRONTEND_IMAGE: dzenchat-web
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Set up Cloud SDK
+    steps:
+      - name: 🧩 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Set up Google Cloud credentials
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: ⚙️ Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Build and push backend
-        run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest ./Dzen_chat.Api
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest
+      - name: 🐳 Configure Docker to use Artifact Registry
+        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev"
 
-      - name: Deploy backend to Cloud Run
+      # ---------- BACKEND BUILD ----------
+      - name: 🏗️ Build backend image
         run: |
-          gcloud run deploy dzenchat-api \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest \
-            --platform managed \
-            --region europe-west1 \
-            --allow-unauthenticated \
-            --set-env-vars RECAPTCHA__SECRETKEY=${{ secrets.RECAPTCHA_SECRET }},RECAPTCHA__EXPECTEDHOSTNAME=${{ secrets.RECAPTCHA_HOSTNAME }},CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
+          docker build \
+            -f Dzen_chat.Api/Dockerfile \
+            -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.BACKEND_IMAGE }}:latest" \
+            .
 
-      - name: Build and push frontend
+      - name: 📦 Push backend image
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest ./frontend
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest
+          docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.BACKEND_IMAGE }}:latest"
 
-      - name: Deploy frontend to Cloud Run
+      # ---------- FRONTEND BUILD ----------
+      - name: 🏗️ Build frontend image
         run: |
-          gcloud run deploy dzenchat-web \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest \
-            --platform managed \
-            --region europe-west1 \
-            --allow-unauthenticated
+          docker build \
+            -f frontend/Dockerfile \
+            -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.FRONTEND_IMAGE }}:latest" \
+            ./frontend
+
+      - name: 📦 Push frontend image
+        run: |
+          docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.FRONTEND_IMAGE }}:latest"
+
+      # ---------- DEPLOY BACKEND ----------
+      - name: 🚀 Deploy backend to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: dzenchat-api
+          region: ${{ env.REGION }}
+          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.BACKEND_IMAGE }}:latest"
+          env_vars: |
+            ASPNETCORE_ENVIRONMENT=Production
+            CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
+            RECAPTCHA__SECRETKEY=${{ secrets.RECAPTCHA_SECRET }}
+            RECAPTCHA__EXPECTEDHOSTNAME=${{ secrets.RECAPTCHA_HOSTNAME }}
+
+      # ---------- DEPLOY FRONTEND ----------
+      - name: 🚀 Deploy frontend to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: dzenchat-web
+          region: ${{ env.REGION }}
+          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dzenchat/${{ env.FRONTEND_IMAGE }}:latest"
