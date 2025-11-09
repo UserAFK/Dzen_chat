@@ -1,28 +1,37 @@
-﻿namespace Dzen_chat.Api.Services;
+﻿using Application.misc;
+using Microsoft.Extensions.Options;
 
-internal static class CaptchaService
+namespace Dzen_chat.Api.Services;
+
+public class CaptchaService
 {
-    internal static async Task<bool> VerifyRecaptchaAsync(string token)
+    private readonly RecaptchaSettings _settings;
+    private readonly HttpClient _http;
+
+    public CaptchaService(IOptions<RecaptchaSettings> options, HttpClient http)
     {
-        var secretKey = "6LfeggQsAAAAANszxO-prC6lvRPIIC_4bR_nITPq";
-        var hostname = "localhost";
-        using var http = new HttpClient();
-        var response = await http.PostAsync(
+        _settings = options.Value;
+        _http = http;
+    }
+
+    public async Task<bool> VerifyRecaptchaAsync(string token)
+    {
+        var response = await _http.PostAsync(
             "https://www.google.com/recaptcha/api/siteverify",
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
-                { "secret", secretKey },
+                { "secret", _settings.SecretKey },
                 { "response", token }
             }));
 
         var json = await response.Content.ReadFromJsonAsync<RecaptchaResponse>();
-        return json.Success && json.Hostname == hostname;
+        return json?.Success == true && json.Hostname == _settings.ExpectedHostname;
     }
 
     private record RecaptchaResponse
     {
         public bool Success { get; set; }
-        public string Challenge_ts { get; set; }
-        public string Hostname { get; set; }
+        public string Challenge_ts { get; set; } = string.Empty;
+        public string Hostname { get; set; } = string.Empty;
     }
 }

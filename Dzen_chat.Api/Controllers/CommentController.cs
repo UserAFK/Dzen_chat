@@ -6,7 +6,7 @@ namespace Dzen_chat.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CommentController(CommentService commentService, FileService fileService) : ControllerBase
+public class CommentController(CommentService commentService) : ControllerBase
 {
 
     [HttpGet()]
@@ -25,18 +25,9 @@ public class CommentController(CommentService commentService, FileService fileSe
 
     [HttpPost]
     [RequestSizeLimit(2_000_000)]
-    public async Task<IActionResult> AddComment([FromForm] CommentDto comment)
+    public async Task<IActionResult> AddComment([FromForm] CommentNewDto comment)
     {
         await commentService.AddCommentAsync(comment);
-        return Ok("Comment added successfully.");
-    }
-
-    [HttpGet("{id}/file")]
-    public async Task<IActionResult> GetCommentFile(Guid id)
-    {
-        var (filetype, filedata, filename) = await fileService.GetFileAsync(id);
-        if (filedata.Length == 0)
-            return NotFound("File not found.");
-        return File(filedata, filetype, filename);
+        return Ok();
     }
 }

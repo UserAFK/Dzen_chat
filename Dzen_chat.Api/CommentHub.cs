@@ -8,23 +8,25 @@ namespace Dzen_chat.Api;
 public class CommentHub : Hub
 {
     private readonly CommentService _commentService;
+    private readonly CaptchaService _captchaService;
 
-    public CommentHub(CommentService commentService)
+    public CommentHub(CommentService commentService, CaptchaService captchaService)
     {
         _commentService = commentService;
+        _captchaService = captchaService;
     }
 
-    public async Task SendReply(CommentDto commentCreateDto)
+    public async Task SendReply(CommentNewDto commentNewDto)
     {
-        if (!await CaptchaService.VerifyRecaptchaAsync(commentCreateDto.Recaptcha))
+        if (!await _captchaService.VerifyRecaptchaAsync(commentNewDto.Recaptcha))
         {
             throw new UnauthorizedAccessException("Recaptcha verification failed.");
         }
-        await _commentService.AddCommentAsync(commentCreateDto);
-        if (commentCreateDto.ParentCommentId.HasValue)
+        await _commentService.AddCommentAsync(commentNewDto);
+        if (commentNewDto.ParentCommentId.HasValue)
         {
-            var updatedComment = await _commentService.GetCommentWithReplies(commentCreateDto.ParentCommentId.Value);
-            await Clients.Group(GetGroupName(commentCreateDto.ParentCommentId.Value))
+            var updatedComment = await _commentService.GetCommentWithReplies(commentNewDto.ParentCommentId.Value);
+            await Clients.Group(GetGroupName(commentNewDto.ParentCommentId.Value))
                 .SendAsync("ReceiveComment", updatedComment);
         }
     }
@@ -46,11 +48,6 @@ public class CommentHub : Hub
     public async Task LeaveCommentGroup(Guid commentId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, commentId.ToString());
-    }
-
-    public async Task Test(string msg)
-    {
-        await Clients.Caller.SendAsync("Pong", $"Got message: {msg}");
     }
 
     private string GetGroupName(Guid commentId) => $"comment-{commentId}";

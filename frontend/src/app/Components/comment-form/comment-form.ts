@@ -4,20 +4,21 @@ import { CommentsService } from '../../Services/comments-service';
 import { CommonModule } from '@angular/common';
 import { SignalrService } from '../../Services/signalr-service';
 import { Comment } from '../../Models/Comment';
-import { RecaptchaModule } from 'ng-recaptcha';
+import { RecaptchaModule, RecaptchaComponent  } from 'ng-recaptcha';
 
 @Component({
   standalone: true,
   selector: 'app-comment-form',
-  imports: [ReactiveFormsModule, CommonModule,RecaptchaModule],
+  imports: [ReactiveFormsModule, CommonModule, RecaptchaModule],
   templateUrl: './comment-form.html'
 })
 export class CommentFormComponent implements OnInit {
   @Input() parentCommentId?: string;
   @Output() commentAdded = new EventEmitter<void>();
+  @ViewChild(RecaptchaComponent) recaptchaComponent!: RecaptchaComponent;
   selectedFile?: File;
   form!: FormGroup;
-  siteKey:string ='6LdnUwQsAAAAADFzg6fX9dzRzdXz6L80h_zwOZVb';
+  siteKey: string = '6LdnUwQsAAAAADFzg6fX9dzRzdXz6L80h_zwOZVb';
 
   @ViewChild('contentArea') contentArea!: ElementRef<HTMLTextAreaElement>;
 
@@ -36,38 +37,48 @@ export class CommentFormComponent implements OnInit {
   onFileSelected(event: any) {
     this.selectedFile = event.target.files[0];
   }
-  
-  applyItalics(): void {
+
+  applyTag(tag: string) {
     const textarea = this.contentArea.nativeElement;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const currentContent = textarea.value;
 
-    if (start < end) {
-      const selectedText = currentContent.substring(start, end);
-      if (currentContent.substring(start - 3, start) === '<i>' && currentContent.substring(end, end + 4) === '</i>') {
+    if (start >= end) return;
 
-        const newContent =
-          currentContent.substring(0, start - 3) +
-          selectedText +
-          currentContent.substring(end + 4);
+    const selectedText = currentContent.substring(start, end);
 
-        this.form.get('content')!.setValue(newContent);
-      } else {
-        const newContent =
-          currentContent.substring(0, start) +
-          `<i>${selectedText}</i>` +
-          currentContent.substring(end);
+    const openTag = tag === 'a' ? `<${tag} href="${selectedText}" title="${selectedText}">` : `<${tag}>`;
+    const closeTag = `</${tag}>`;
 
-        this.form.get('content')!.setValue(newContent);
-      }
-      setTimeout(() => {
-        textarea.focus();
-        textarea.selectionStart = start + 3;
-        textarea.selectionEnd = end + 3;
-      }, 0);
+    const hasOpen = currentContent.substring(start - openTag.length, start) === openTag;
+    const hasClose = currentContent.substring(end, end + closeTag.length) === closeTag;
+
+    let newContent: string;
+
+    if (hasOpen && hasClose && tag !== 'a') {
+      newContent =
+        currentContent.substring(0, start - openTag.length) +
+        selectedText +
+        currentContent.substring(end + closeTag.length);
+    } else {
+      newContent =
+        currentContent.substring(0, start) +
+        openTag +
+        selectedText +
+        closeTag +
+        currentContent.substring(end);
     }
+
+    this.form.get('content')!.setValue(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = start + openTag.length;
+      textarea.selectionEnd = end + openTag.length;
+    }, 0);
   }
+
 
   onCaptchaResolved(token: string | null) {
     if (token) {
@@ -80,11 +91,19 @@ export class CommentFormComponent implements OnInit {
 
   submit() {
     if (this.form!.invalid) return;
-
+    if (this.hasUnclosedTags(this.form!.get('content')?.value)) {
+      window.alert('Input has unclosed tags.')
+      return;
+    }
+    const newId = crypto.randomUUID();
+    let newComment = this.form.getRawValue() as Comment;
+    newComment.id = newId;
+    newComment.parentCommentId = this.parentCommentId;
     const formData = new FormData();
     Object.entries(this.form!.value).forEach(([key, val]) => {
       if (val !== null && val !== undefined) formData.append(key, val.toString());
     });
+    formData.append("id", newId);
     if (this.selectedFile) formData.append('file', this.selectedFile);
 
     switch (this.parentCommentId) {
@@ -92,10 +111,35 @@ export class CommentFormComponent implements OnInit {
         this.service.addComment(formData).subscribe();
         break;
       default:
-        this.signalrService.sendReply(this.form.getRawValue() as Comment);
+        this.signalrService.sendReply(newComment);
+        if (this.selectedFile) this.service.addFile(this.selectedFile, newId).subscribe();
         break;
     }
     this.form!.reset();
+    this.recaptchaComponent.reset();
+    this.selectedFile = undefined;
     this.commentAdded.emit();
   }
+
+  private hasUnclosedTags(value: string): boolean {
+    if (!value) return false;
+    const tags = ['i', 'strong', 'code', 'a'];
+    const unclosed: string[] = [];
+
+    for (const tag of tags) {
+      const openCount = (value.match(new RegExp(`<${tag}[^>]*>`, 'g')) || []).length;
+      const closeCount = (value.match(new RegExp(`</${tag}>`, 'g')) || []).length;
+
+      if (openCount > closeCount) {
+        unclosed.push(tag);
+      }
+    }
+
+    if (unclosed.length > 0) {
+      console.warn('Unclosed tags:', unclosed.join(', '));
+      return true;
+    }
+    return false;
+  }
+
 }

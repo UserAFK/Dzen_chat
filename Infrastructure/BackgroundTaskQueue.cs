@@ -7,7 +7,7 @@ public class BackgroundTaskQueue : IBackgroundTaskQueue
 {
     private readonly ConcurrentQueue<FileProcessingItem> _queue = new();
 
-    public void QueueFile(FileProcessingItem item)
+    public void EnqueueFile(FileProcessingItem item)
     {
         _queue.Enqueue(item);
     }

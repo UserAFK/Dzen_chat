@@ -1,5 +1,4 @@
 ﻿using Application.Dto;
-using AutoMapper;
 using Ganss.Xss;
 using Infrastructure;
 using Infrastructure.Models;
@@ -10,22 +9,29 @@ namespace Application;
 public class CommentService
 {
     private readonly IAppDbContext _context;
-    private readonly IMapper _mapper;
-    private readonly IBackgroundTaskQueue _queue;
+    private readonly FileService _fileService;
 
-    public CommentService(IAppDbContext context, IMapper mapper, IBackgroundTaskQueue queue)
+    public CommentService(IAppDbContext context, FileService fileService)
     {
         _context = context;
-        _mapper = mapper;
-        _queue = queue;
+        _fileService = fileService;
     }
 
-    public async Task<List<Comment>> GetCommentsAsync(int? page, string? orderBy, string? order)
+    public async Task<List<CommentTableDto>> GetCommentsAsync(int? page, string? orderBy, string? order)
     {
         int pageSize = 25;
         var query = _context.Comments
             .Where(c => c.ParentCommentId == null)
             .Skip(page.HasValue && page.Value > 0 ? (page.Value - 1) * pageSize : 0)
+            .Include(c => c.User)
+            .Select(c => new CommentTableDto()
+            {
+                Id = c.Id,
+                CreatedAt = c.CreatedAt,
+                Username = c.User.Username,
+                Email = c.User.Email,
+                FileType = c.FileType,
+            })
             .Take(pageSize);
         query = (orderBy?.ToLower()) switch
         {
@@ -41,57 +47,44 @@ public class CommentService
             _ => query.OrderByDescending(c => c.CreatedAt),
         };
         query = query
-            .AsNoTracking()
-            .Select(c => new Comment()
-            {
-                Id = c.Id,
-                Content = c.Content,
-                CreatedAt = c.CreatedAt,
-                Username = c.Username,
-                Email = c.Email,
-                ParentCommentId = c.ParentCommentId,
-                FileData = c.FileData,
-                FileType = c.FileType,
-            });
+            .AsNoTracking();
         return await query.ToListAsync();
     }
 
-    public async Task<Comment?> GetCommentWithReplies(Guid selectedCommentId)
+    public async Task<CommentDto?> GetCommentWithReplies(Guid selectedCommentId)
     {
         var commentProjection = await _context.Comments
             .AsNoTracking()
             .Where(c => c.Id == selectedCommentId)
-            .Select(c => new Comment
+            .Include(c => c.User)
+            .Include(c => c.Replies)
+            .Select(c => new CommentDto
             {
                 Id = c.Id,
                 Content = c.Content,
                 CreatedAt = c.CreatedAt,
-                Username = c.Username,
-                Email = c.Email,
+                Username = c.User.Username,
+                Email = c.User.Email,
                 ParentCommentId = c.ParentCommentId,
-                FileData = c.FileData,
                 FileType = c.FileType,
 
-                ParentComment = c.ParentComment == null ? null : new Comment
+                ParentComment = c.ParentComment == null ? null : new CommentReplyDto
                 {
                     Id = c.ParentComment.Id,
                     Content = c.ParentComment.Content,
                     CreatedAt = c.ParentComment.CreatedAt,
-                    Username = c.ParentComment.Username,
-                    Email = c.ParentComment.Email,
+                    Username = c.ParentComment.User.Username,
+                    Email = c.ParentComment.User.Email,
                 },
 
-                Replies = c.Replies.Select(r => new Comment
+                Replies = c.Replies.Select(r => new CommentReplyDto
                 {
                     Id = r.Id,
                     Content = r.Content,
                     CreatedAt = r.CreatedAt,
-                    Username = r.Username,
-                    Email = r.Email,
-                    ParentCommentId = r.ParentCommentId,
-
-                    ParentComment = null,
-                    Replies = new List<Comment>()
+                    Username = r.User.Username,
+                    Email = r.User.Email,
+                    ParentCommentId = r.ParentCommentId
                 }).ToList()
             })
             .FirstOrDefaultAsync();
@@ -99,7 +92,7 @@ public class CommentService
         return commentProjection;
     }
 
-    public async Task AddCommentAsync(CommentDto comment)
+    public async Task AddCommentAsync(CommentNewDto comment)
     {
         if (string.IsNullOrWhiteSpace(comment.Email) || string.IsNullOrWhiteSpace(comment.Username))
             throw new ArgumentNullException("Username and Email are required to add a comment.");
@@ -107,24 +100,39 @@ public class CommentService
             throw new ArgumentNullException("Content is required to add a comment.");
 
         comment.Content = CleanContent(comment.Content);
-        var newComment = _mapper.Map<Comment>(comment);
+        var newComment = new Comment()
+        {
+            Id = comment.Id.Value,
+            Content = comment.Content,
+            ParentCommentId = comment.ParentCommentId
+        };
+        newComment.CreatedAt = DateTime.UtcNow;
+        var user = new User();
+        user = await _context.Users.FirstOrDefaultAsync(u => u.Username == comment.Username && u.Email == comment.Email);
+        if (user != null)
+        {
+            newComment.UserId = user.Id;
+        }
+        else
+        {
+            user = new User
+            {
+                Id = Guid.NewGuid(),
+                Username = comment.Username!,
+                Email = comment.Email!,
+                HomePage = comment.HomePage
+            };
+        }
         newComment.FileType = comment.File?.ContentType;
+        newComment.UserId = user.Id;
 
+        await _context.Users.AddAsync(user);
         await _context.Comments.AddAsync(newComment);
         await _context.SaveChangesAsync();
 
         if (comment.File != null)
         {
-            using var ms = new MemoryStream();
-            await comment.File.CopyToAsync(ms);
-
-            var item = new FileProcessingItem(
-                newComment.Id,
-                comment.File.ContentType,
-                ms.ToArray()
-            );
-
-            _queue.QueueFile(item);
+            _fileService.QueueFile(newComment.Id, comment.File);
         }
     }
 

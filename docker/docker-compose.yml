@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: dzenchat-db
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD}
+      ACCEPT_EULA: Y
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    networks:
+      - dzenchat-network
+
+  backend:
+    build:
+      context: ../
+      dockerfile: ./Dzen_chat.api/Dockerfile
+    container_name: dzenchat-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      CONNECTION_STRING: "Server=mssql;Database=DzenChatDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      RECAPTCHA__SECRETKEY: "6LfeggQsAAAAANszxO-prC6lvRPIIC_4bR_nITPq"
+      RECAPTCHA__EXPECTEDHOSTNAME: "localhost"
+    ports:
+      - "7242:8080"
+    depends_on:
+      - mssql
+    networks:
+      - dzenchat-network
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: dzenchat-web
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - dzenchat-network
+
+
+volumes:
+  mssql-data:
+
+networks:
+  dzenchat-network:
+    driver: bridge
