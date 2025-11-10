@@ -20,7 +20,7 @@ jobs:
 
       - name: Build and push backend
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest ./Dzen_chat.Api
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest .
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest
 
       - name: Deploy backend to Cloud Run
@@ -28,7 +28,7 @@ jobs:
           gcloud run deploy dzenchat-api \
             --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest \
             --platform managed \
-            --region europe-west1 \
+            --region europe-north1 \
             --allow-unauthenticated \
             --set-env-vars RECAPTCHA__SECRETKEY=${{ secrets.RECAPTCHA_SECRET }},RECAPTCHA__EXPECTEDHOSTNAME=${{ secrets.RECAPTCHA_HOSTNAME }},CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
 
@@ -42,5 +42,5 @@ jobs:
           gcloud run deploy dzenchat-web \
             --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest \
             --platform managed \
-            --region europe-west1 \
+            --region europe-north1 \
             --allow-unauthenticated
