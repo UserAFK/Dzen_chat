@@ -16,8 +16,8 @@ services:
 
   backend:
     build:
-      context: ../
-      dockerfile: ./Dzen_chat.api/Dockerfile
+      context: ./
+      dockerfile: Dockerfile
     container_name: dzenchat-api
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -33,7 +33,7 @@ services:
 
   frontend:
     build:
-      context: ../frontend
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: dzenchat-web
     ports:

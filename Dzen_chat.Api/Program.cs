@@ -69,6 +69,24 @@ app.MapHub<CommentHub>("/commentHub")
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var retries = 6;
+    for (int i = 0; i < retries; i++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            Console.WriteLine("Database migration succeeded.");
+            break;
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex)
+        {
+            Console.WriteLine($"Database connection failed (attempt {i + 1}/{retries}): {ex.Message}");
+            if (i == retries - 1)
+            {
+                throw;
+            }
+            await Task.Delay(5000);
+        }
+    }
 }
 app.Run();
