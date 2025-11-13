@@ -72,20 +72,31 @@ using (var scope = app.Services.CreateScope())
     var retries = 6;
     for (int i = 0; i < retries; i++)
     {
-        try
+        if (db.Database.CanConnect())
         {
-            db.Database.Migrate();
-            Console.WriteLine("Database migration succeeded.");
-            break;
-        }
-        catch (Microsoft.Data.SqlClient.SqlException ex)
-        {
-            Console.WriteLine($"Database connection failed (attempt {i + 1}/{retries}): {ex.Message}");
-            if (i == retries - 1)
+            if (db.Database.GetPendingMigrations().Count() == 0)
             {
-                throw;
+                Console.WriteLine("Database is up to date, no migration needed.");
+                break;
             }
-            await Task.Delay(5000);
+        }
+        else
+        {
+            try
+            {
+                db.Database.Migrate();
+                Console.WriteLine("Database migration succeeded.");
+                break;
+            }
+            catch (Microsoft.Data.SqlClient.SqlException ex)
+            {
+                Console.WriteLine($"Database connection failed (attempt {i + 1}/{retries}): {ex.Message}");
+                if (i == retries - 1)
+                {
+                    throw;
+                }
+                await Task.Delay(5000);
+            }
         }
     }
 }
