@@ -22,8 +22,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       CONNECTION_STRING: "Server=mssql;Database=DzenChatDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
-      RECAPTCHA__SECRETKEY: "6LfeggQsAAAAANszxO-prC6lvRPIIC_4bR_nITPq"
+      RECAPTCHA__SECRETKEY: "6LfeggQsAAAAAHpTMhYkyCPbRg73gOaI3CQZK_2Z"
       RECAPTCHA__EXPECTEDHOSTNAME: "localhost"
+      ORIGIN: "localhost"
     ports:
       - "7242:8080"
     depends_on:
@@ -36,8 +37,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: dzenchat-web
+    environment:
+      API_BASE_URL: "http://backend:8080"
     ports:
-      - "4200:80"
+      - "4200:8080"
     depends_on:
       - backend
     networks:

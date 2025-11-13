@@ -25,7 +25,7 @@ public class CaptchaService
             }));
 
         var json = await response.Content.ReadFromJsonAsync<RecaptchaResponse>();
-        return json?.Success == true && json.Hostname == _settings.ExpectedHostname;
+        return json!.Success;
     }
 
     private record RecaptchaResponse

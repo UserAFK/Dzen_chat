@@ -109,11 +109,7 @@ public class CommentService
         newComment.CreatedAt = DateTime.UtcNow;
         var user = new User();
         user = await _context.Users.FirstOrDefaultAsync(u => u.Username == comment.Username && u.Email == comment.Email);
-        if (user != null)
-        {
-            newComment.UserId = user.Id;
-        }
-        else
+        if (user == null)
         {
             user = new User
             {
@@ -122,11 +118,13 @@ public class CommentService
                 Email = comment.Email!,
                 HomePage = comment.HomePage
             };
+
+            await _context.Users.AddAsync(user);
         }
+        
         newComment.FileType = comment.File?.ContentType;
         newComment.UserId = user.Id;
 
-        await _context.Users.AddAsync(user);
         await _context.Comments.AddAsync(newComment);
         await _context.SaveChangesAsync();
 

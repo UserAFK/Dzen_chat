@@ -7,10 +7,8 @@ RUN npm run build --prod
 
 # Serve stage
 FROM nginx:alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-# COPY --from=build /app/dist/dzenchat /usr/share/nginx/html
+COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
 COPY --from=build /app/dist/dzenchat/browser /usr/share/nginx/html
-# COPY --from=build /app/dist/frontend/browser /usr/share/nginx/htm
-EXPOSE 80
-# CMD ["nginx", "-g", "daemon off;"]
-CMD ["/bin/sh", "-c", "envsubst '$${API_BASE_URL}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+EXPOSE 8080
+CMD ["/bin/sh", "-c", "envsubst '${API_BASE_URL}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+
