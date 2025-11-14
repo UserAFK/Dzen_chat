@@ -28,12 +28,11 @@ export class CommentListComponent implements OnInit {
   ngOnInit() {
   }
   reload() {
-    console.log('reload() called');
     this.reload$.next();
   }
 
   load() {
-  this.reload$.next();
+    this.reload$.next();
   }
 
   onCommentAdded() {
@@ -64,5 +63,17 @@ export class CommentListComponent implements OnInit {
 
   goToComment(id: string) {
     this.router.navigate(['/comments', id]);
+  }
+
+  next() {
+    this.page++;
+    this.load();
+  }
+
+  prev() {
+    if (this.page > 1) {
+      this.page--;
+      this.load();
+    }
   }
 }
