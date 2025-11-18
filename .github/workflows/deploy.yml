@@ -21,6 +21,9 @@ jobs:
           service_account: svc-cloudrun-apps@dzen-chat-477414.iam.gserviceaccount.com
           workload_identity_provider: projects/656951842437/locations/global/workloadIdentityPools/github-actions/providers/github-actions
 
+      - name: Configure Docker to use gcloud credentials
+        run: gcloud auth configure-docker europe-north1-docker.pkg.dev --quiet
+
       - name: Build and push backend
         run: |
           docker build -t europe-north1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/main-repo/backend:latest .
