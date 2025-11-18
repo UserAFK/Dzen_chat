@@ -47,8 +47,8 @@ export class CommentListComponent implements OnInit {
   }
 
   closeForm(): void {
-    this.load();
     this.showForm.set(false);
+    this.load();
   }
 
   download(comment: Comment) {

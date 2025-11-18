@@ -1,5 +1,4 @@
 using Application;
-using Application.misc;
 using Dzen_chat.Api;
 using Dzen_chat.Api.Services;
 using Infrastructure;
@@ -16,6 +15,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
 
+builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -44,8 +44,6 @@ builder.Services.AddHostedService<FileProcessingService>();
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Host.UseSerilog();
-builder.Services.Configure<RecaptchaSettings>(
-    builder.Configuration.GetSection("Recaptcha"));
 
 var app = builder.Build();
 

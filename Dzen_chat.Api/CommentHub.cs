@@ -22,12 +22,20 @@ public class CommentHub : Hub
         {
             throw new UnauthorizedAccessException("Recaptcha verification failed.");
         }
-        await _commentService.AddCommentAsync(commentNewDto);
-        if (commentNewDto.ParentCommentId.HasValue)
+        try
         {
-            var updatedComment = await _commentService.GetCommentWithReplies(commentNewDto.ParentCommentId.Value);
-            await Clients.Group(GetGroupName(commentNewDto.ParentCommentId.Value))
-                .SendAsync("ReceiveComment", updatedComment);
+            await _commentService.AddCommentAsync(commentNewDto);
+
+            if (commentNewDto.ParentCommentId.HasValue)
+            {
+                var updatedComment = await _commentService.GetCommentWithReplies(commentNewDto.ParentCommentId.Value);
+                await Clients.Group(GetGroupName(commentNewDto.ParentCommentId.Value))
+                    .SendAsync("ReceiveComment", updatedComment);
+            }
+        }
+        catch (Exception e)
+        {
+            await Clients.Caller.SendAsync("Error", e.Message);
         }
     }
 

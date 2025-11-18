@@ -1,37 +1,58 @@
-﻿using Application.misc;
-using Microsoft.Extensions.Options;
-
-namespace Dzen_chat.Api.Services;
+﻿namespace Dzen_chat.Api.Services;
 
 public class CaptchaService
 {
-    private readonly RecaptchaSettings _settings;
+    private readonly IConfiguration _cfg;
     private readonly HttpClient _http;
+    private readonly double minimalScore = 0.5;
 
-    public CaptchaService(IOptions<RecaptchaSettings> options, HttpClient http)
+    public CaptchaService(IConfiguration cfg, HttpClient http)
     {
-        _settings = options.Value;
+        _cfg = cfg;
         _http = http;
     }
 
     public async Task<bool> VerifyRecaptchaAsync(string token)
     {
-        var response = await _http.PostAsync(
-            "https://www.google.com/recaptcha/api/siteverify",
-            new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                { "secret", _settings.SecretKey },
-                { "response", token }
-            }));
+        var projectId = _cfg["Recaptcha:ProjectId"];
+        var apiKey = _cfg["Recaptcha:ApiKey"];
+        var siteKey = _cfg["Recaptcha:SiteKey"];
 
-        var json = await response.Content.ReadFromJsonAsync<RecaptchaResponse>();
-        return json!.Success;
+        var request = new
+        {
+            @event = new
+            {
+                token = token,
+                siteKey = siteKey
+            }
+        };
+
+        var response = await _http.PostAsJsonAsync(
+            $"https://recaptchaenterprise.googleapis.com/v1/projects/{projectId}/assessments?key={apiKey}",
+            request
+        );
+
+        var json = await response.Content.ReadFromJsonAsync<RecaptchaEnterpriseResponse>();
+
+        return json?.RiskAnalysis?.Score > minimalScore;
     }
 
-    private record RecaptchaResponse
+    public class RecaptchaEnterpriseResponse
     {
-        public bool Success { get; set; }
-        public string Challenge_ts { get; set; } = string.Empty;
-        public string Hostname { get; set; } = string.Empty;
+        public RiskAnalysis RiskAnalysis { get; set; }
+        public TokenProperties TokenProperties { get; set; }
+    }
+
+    public class RiskAnalysis
+    {
+        public float Score { get; set; }
+        public List<string> Reasons { get; set; }
+    }
+
+    public class TokenProperties
+    {
+        public bool Valid { get; set; }
+        public string InvalidReason { get; set; }
+        public string Action { get; set; }
     }
 }

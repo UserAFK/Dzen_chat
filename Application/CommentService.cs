@@ -108,7 +108,7 @@ public class CommentService
         };
         newComment.CreatedAt = DateTime.UtcNow;
         var user = new User();
-        user = await _context.Users.FirstOrDefaultAsync(u => u.Username == comment.Username && u.Email == comment.Email);
+        user = await _context.Users.FirstOrDefaultAsync(u => u.Username == comment.Username || u.Email == comment.Email);
         if (user == null)
         {
             user = new User
@@ -120,6 +120,10 @@ public class CommentService
             };
 
             await _context.Users.AddAsync(user);
+        }
+        if (user.Username != comment.Username || user.Email != comment.Email)
+        {
+            throw new ArgumentException($"Provided Username ({comment.Username}) or Email ({comment.Email}) is already in use or misspeled.");
         }
         
         newComment.FileType = comment.File?.ContentType;

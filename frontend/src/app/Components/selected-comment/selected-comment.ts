@@ -32,7 +32,7 @@ export class SelectedCommentComponent implements OnInit, OnDestroy {
     });
   }
   ngOnDestroy(): void {
-    this.signalrService.disconect(this.id);
+    this.signalrService.leaveGroup(this.id);
   }
   download(comment: Comment) {
     this.service.download(comment.id);
@@ -62,6 +62,11 @@ export class SelectedCommentComponent implements OnInit, OnDestroy {
         (comment: SelectedComment) => {
           this.comment$.next(comment)
           this.isLoaded.set(true);
+        })
+
+      this.signalrService.getHubConnection().on('Error',
+        (error: any) => {
+          window.alert(error);
         })
 
       this.signalrService.joinCommentGroup(this.id);
