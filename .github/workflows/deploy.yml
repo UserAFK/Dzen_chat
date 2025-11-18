@@ -10,8 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      - uses: 'google-github-actions/auth@v3'
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
@@ -20,27 +24,36 @@ jobs:
 
       - name: Build and push backend
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest .
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest
+          docker build -t europe-north1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/main-repo/backend:latest .
+          docker push europe-north1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/main-repo/backend:latest
 
       - name: Deploy backend to Cloud Run
         run: |
-          gcloud run deploy dzenchat-api \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-api:latest \
-            --platform managed \
-            --region europe-north1 \
-            --allow-unauthenticated \
-            --set-env-vars RECAPTCHA__SECRETKEY=${{ secrets.RECAPTCHA_SECRET }},RECAPTCHA__EXPECTEDHOSTNAME=${{ secrets.RECAPTCHA_HOSTNAME }},CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
+          gcloud run deploy backend-service \
+            --image=europe-north1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/main-repo/backend:latest  \
+            --region=europe-north1  \
+            --platform=managed   \
+            --service-account=svc-cloudrun-apps@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com  \
+            --vpc-connector=my-connector \
+            --vpc-egress=all-traffic   \
+            --set-env-vars ASPNETCORE_ENVIRONMENT="Production",DB_HOST=10.26.144.3,DB_PORT=1433,DB_USER=sqluser,ORIGIN=https://frontend-service-656951842437.europe-north1.run.app  \
+            --update-secrets DB_PASSWORD=sql-db-password:latest   \
+            --update-secrets CONNECTION_STRING=connection-string:latest \
+            --update-secrets RECAPTCHA=recaptcha-config:latest  \
+            --allow-unauthenticated
 
       - name: Build and push frontend
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest ./frontend
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest
+          docker build -t europe-north1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/main-repo/frontend:latest ./frontend
+          docker push europe-north1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/main-repo/frontend:latest
 
       - name: Deploy frontend to Cloud Run
         run: |
-          gcloud run deploy dzenchat-web \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/dzenchat-web:latest \
-            --platform managed \
-            --region europe-north1 \
-            --allow-unauthenticated
+          gcloud run deploy frontend-service \
+            --image=europe-north1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/main-repo/frontend:latest   \
+            --region=europe-north1 \
+            --vpc-connector=my-connector  \
+            --vpc-egress=all-traffic   \
+            --platform=managed   \
+            --service-account=svc-cloudrun-apps@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com   \
+            --allow-unauthenticated 
