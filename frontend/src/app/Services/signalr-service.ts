@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { Comment } from '../Models/Comment';
 import { environment } from '../../environments/environment';
 
@@ -11,6 +11,8 @@ export class SignalrService {
   constructor() {
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(`${environment.apiBaseUrl}/commentHub`)
+      .withAutomaticReconnect()
+      .configureLogging(LogLevel.Information)
       .build();
   }
 
@@ -28,7 +30,7 @@ export class SignalrService {
   }
 
   async disconect(id: string) {
-    this.hubConnection.invoke('LeaveCommentGroup', id)
+    this.leaveGroup(id)
     await this.hubConnection.stop();
   }
 

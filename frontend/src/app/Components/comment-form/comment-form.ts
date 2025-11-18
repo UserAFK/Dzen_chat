@@ -1,10 +1,10 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommentsService } from '../../Services/comments-service';
 import { CommonModule } from '@angular/common';
 import { SignalrService } from '../../Services/signalr-service';
 import { Comment } from '../../Models/Comment';
-import { RecaptchaModule, RecaptchaComponent  } from 'ng-recaptcha';
+import { RecaptchaModule, RecaptchaComponent } from 'ng-recaptcha';
 
 @Component({
   standalone: true,
@@ -12,14 +12,14 @@ import { RecaptchaModule, RecaptchaComponent  } from 'ng-recaptcha';
   imports: [ReactiveFormsModule, CommonModule, RecaptchaModule],
   templateUrl: './comment-form.html'
 })
-export class CommentFormComponent implements OnInit {
+export class CommentFormComponent implements OnInit, AfterViewInit {
   @Input() parentCommentId?: string;
   @Output() commentAdded = new EventEmitter<void>();
   @ViewChild(RecaptchaComponent) recaptchaComponent!: RecaptchaComponent;
   selectedFile?: File;
   form!: FormGroup;
-  siteKey: string = '6LdnUwQsAAAAADFzg6fX9dzRzdXz6L80h_zwOZVb';
 
+  @ViewChild('captchaRef', { static: false }) captchaRef!: ElementRef;
   @ViewChild('contentArea') contentArea!: ElementRef<HTMLTextAreaElement>;
 
   constructor(private fb: FormBuilder, private service: CommentsService, private signalrService: SignalrService) { }
@@ -32,6 +32,26 @@ export class CommentFormComponent implements OnInit {
       parentCommentId: [this.parentCommentId ?? null],
       recaptcha: ['', Validators.required]
     });
+  }
+  
+  ngAfterViewInit(): void {
+    this.initRecaptcha();
+  }
+
+  initRecaptcha() {
+    const interval = setInterval(() => {
+      if (window.grecaptcha?.enterprise) {
+        clearInterval(interval);
+
+        window.grecaptcha.enterprise.render(
+          this.captchaRef.nativeElement,
+          {
+            sitekey: this.siteKey,
+            callback: (token: string) => this.onCaptchaResolved(token)
+          }
+        );
+      }
+    }, 200);
   }
 
   onFileSelected(event: any) {
@@ -79,8 +99,10 @@ export class CommentFormComponent implements OnInit {
     }, 0);
   }
 
-
-  onCaptchaResolved(token: string | null) {
+  
+  siteKey = '6Ld9hAwsAAAAACbiIpgrihTximVSIxCsUYNveDYh';
+  declare grecaptcha: any;
+  onCaptchaResolved(token: Event| string | null) {
     if (token) {
       this.form.get('recaptcha')?.setValue(token);
       this.form.get('recaptcha')?.updateValueAndValidity();
@@ -108,13 +130,19 @@ export class CommentFormComponent implements OnInit {
 
     switch (this.parentCommentId) {
       case undefined:
-        this.service.addComment(formData).subscribe();
+        this.service.addComment(formData).subscribe({
+          next: (c) => this.onCommentSent(),
+          error: (e) => window.alert(e.error.detail)
+        });
         break;
       default:
         this.signalrService.sendReply(newComment);
         if (this.selectedFile) this.service.addFile(this.selectedFile, newId).subscribe();
+        this.onCommentSent();
         break;
     }
+  }
+  private onCommentSent() {
     this.form!.reset();
     this.recaptchaComponent.reset();
     this.selectedFile = undefined;

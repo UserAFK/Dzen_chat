@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: ''
+  apiBaseUrl: 'https://backend-service-656951842437.europe-north1.run.app'
 };

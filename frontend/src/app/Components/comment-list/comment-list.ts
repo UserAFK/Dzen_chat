@@ -3,7 +3,7 @@ import { CommentsService } from '../../Services/comments-service';
 import { Comment } from '../../Models/Comment';
 import { CommonModule, DatePipe } from '@angular/common'
 import { CommentFormComponent } from '../comment-form/comment-form';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { startWith, Subject, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 
 @Component({
@@ -13,7 +13,12 @@ import { Router } from '@angular/router';
   imports: [DatePipe, CommentFormComponent, CommonModule]
 })
 export class CommentListComponent implements OnInit {
-  comments$: BehaviorSubject<Comment[]> = new BehaviorSubject<Comment[]>([]);
+  private reload$ = new Subject<void>();
+  comments$ = this.reload$.pipe(
+    startWith(void 0),
+    switchMap(() => this.service.getComments(this.page, this.orderBy, this.order))
+  );
+
   page = 1;
   orderBy = 'createdAt';
   order = 'desc';
@@ -21,12 +26,13 @@ export class CommentListComponent implements OnInit {
   constructor(private service: CommentsService, private router: Router) { }
 
   ngOnInit() {
-    this.load();
+  }
+  reload() {
+    this.reload$.next();
   }
 
   load() {
-    this.service.getComments(this.page, this.orderBy, this.order)
-      .subscribe(data => this.comments$.next(data))
+    this.reload$.next();
   }
 
   onCommentAdded() {
@@ -41,8 +47,8 @@ export class CommentListComponent implements OnInit {
   }
 
   closeForm(): void {
-    this.load();
     this.showForm.set(false);
+    this.load();
   }
 
   download(comment: Comment) {
@@ -54,8 +60,20 @@ export class CommentListComponent implements OnInit {
     this.orderBy = field;
     this.load();
   }
-  
+
   goToComment(id: string) {
     this.router.navigate(['/comments', id]);
+  }
+
+  next() {
+    this.page++;
+    this.load();
+  }
+
+  prev() {
+    if (this.page > 1) {
+      this.page--;
+      this.load();
+    }
   }
 }
