@@ -1,10 +1,12 @@
 ﻿using Application;
 using Application.Dto;
 using Dzen_chat.Api.Services;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Dzen_chat.Api;
 
+[EnableCors("LocalPolicy")]
 public class CommentHub : Hub
 {
     private readonly CommentService _commentService;

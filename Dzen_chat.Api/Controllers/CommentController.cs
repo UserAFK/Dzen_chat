@@ -1,11 +1,13 @@
 ﻿using Application;
 using Application.Dto;
 using Dzen_chat.Api.Services;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Dzen_chat.Api.Controllers;
 
 [ApiController]
+[EnableCors("LocalPolicy")]
 [Route("api/[controller]")]
 public class CommentController(CommentService commentService, CaptchaService captchaService) : ControllerBase
 {
