@@ -20,10 +20,6 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account: svc-cloudrun-apps@dzen-chat-477414.iam.gserviceaccount.com
           workload_identity_provider: projects/656951842437/locations/global/workloadIdentityPools/github-actions/providers/github-actions
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Build and push backend
         run: |
