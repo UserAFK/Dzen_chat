@@ -20,15 +20,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+var origin = Environment.GetEnvironmentVariable("ORIGIN") ?? "http://localhost:4200";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LocalPolicy",
         builder =>
         {
-            builder.WithOrigins(
-                Environment.GetEnvironmentVariable("ORIGIN") ?? "http://localhost:4200",
-                "http://dzenchat-web",
-                "http://frontend")
+            builder.WithOrigins(origin)
                    .AllowAnyMethod()
                    .AllowAnyHeader()
                    .AllowCredentials();

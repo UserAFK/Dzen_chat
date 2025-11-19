@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output, SecurityContext } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SecurityContext, SimpleChanges } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Comment } from '../../Models/Comment';
@@ -10,7 +10,7 @@ import { Comment } from '../../Models/Comment';
   templateUrl: './reply-comment.html',
   imports: [ReactiveFormsModule, CommonModule]
 })
-export class ReplyCommentComponent implements OnInit {
+export class ReplyCommentComponent implements OnInit, OnChanges{
   @Input() comment?: Comment
   @Output() replyAdded = new EventEmitter<void>();
   safeContent!: string | null;
@@ -18,6 +18,14 @@ export class ReplyCommentComponent implements OnInit {
   constructor(private sanitizer: DomSanitizer) { }
 
   ngOnInit() {
-    this.safeContent = this.sanitizer.sanitize(SecurityContext.HTML, this.comment!.content);
+    this.setSanitizedString(this.comment!.content);
+  }
+  ngOnChanges(changes: SimpleChanges): void {
+      let changedComment:Comment = changes['comment'].currentValue;
+      this.safeContent = this.sanitizer.sanitize(SecurityContext.HTML, changedComment.content);
+  }
+
+  private setSanitizedString(content:string){
+    this.safeContent = this.sanitizer.sanitize(SecurityContext.HTML, content);
   }
 }
