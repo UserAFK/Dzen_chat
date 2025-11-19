@@ -15,12 +15,12 @@ import { RecaptchaModule, RecaptchaComponent } from 'ng-recaptcha';
 export class CommentFormComponent implements OnInit, AfterViewInit {
   @Input() parentCommentId?: string;
   @Output() commentAdded = new EventEmitter<void>();
-  @ViewChild(RecaptchaComponent) recaptchaComponent!: RecaptchaComponent;
-  selectedFile?: File;
-  form!: FormGroup;
-
   @ViewChild('captchaRef', { static: false }) captchaRef!: ElementRef;
   @ViewChild('contentArea') contentArea!: ElementRef<HTMLTextAreaElement>;
+  private siteKey = '6Ld9hAwsAAAAACbiIpgrihTximVSIxCsUYNveDYh';
+  selectedFile?: File;
+  form!: FormGroup;
+  private recaptchaWidgetId: number | undefined;
 
   constructor(private fb: FormBuilder, private service: CommentsService, private signalrService: SignalrService) { }
   ngOnInit(): void {
@@ -33,7 +33,7 @@ export class CommentFormComponent implements OnInit, AfterViewInit {
       recaptcha: ['', Validators.required]
     });
   }
-  
+
   ngAfterViewInit(): void {
     this.initRecaptcha();
   }
@@ -43,7 +43,7 @@ export class CommentFormComponent implements OnInit, AfterViewInit {
       if (window.grecaptcha?.enterprise) {
         clearInterval(interval);
 
-        window.grecaptcha.enterprise.render(
+        this.recaptchaWidgetId = window.grecaptcha.enterprise.render(
           this.captchaRef.nativeElement,
           {
             sitekey: this.siteKey,
@@ -99,10 +99,7 @@ export class CommentFormComponent implements OnInit, AfterViewInit {
     }, 0);
   }
 
-  
-  siteKey = '6Ld9hAwsAAAAACbiIpgrihTximVSIxCsUYNveDYh';
-  declare grecaptcha: any;
-  onCaptchaResolved(token: Event| string | null) {
+  onCaptchaResolved(token: Event | string | null) {
     if (token) {
       this.form.get('recaptcha')?.setValue(token);
       this.form.get('recaptcha')?.updateValueAndValidity();
@@ -142,10 +139,13 @@ export class CommentFormComponent implements OnInit, AfterViewInit {
         break;
     }
   }
+
   private onCommentSent() {
     this.form!.reset();
-    this.recaptchaComponent.reset();
     this.selectedFile = undefined;
+    if (this.recaptchaWidgetId !== undefined && window.grecaptcha?.enterprise) {
+      window.grecaptcha.enterprise.reset(this.recaptchaWidgetId);
+    }
     this.commentAdded.emit();
   }
 
@@ -169,5 +169,4 @@ export class CommentFormComponent implements OnInit, AfterViewInit {
     }
     return false;
   }
-
 }

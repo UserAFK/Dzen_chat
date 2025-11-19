@@ -41,9 +41,7 @@
   <input type="file" (change)="onFileSelected($event)"
     class="block w-full text-gray-600 border border-gray-300 p-2 rounded-lg" />
 
-  <div #captchaRef class="g-recaptcha" [attr.data-sitekey]="siteKey" data-theme="light" data-size="normal"
-    (token)="onCaptchaResolved($event)">
-  </div>
+  <div #captchaRef></div>
 
   <button type="submit" [disabled]="form.invalid"
     class="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold px-4 py-2 rounded-lg transition shadow-md">
