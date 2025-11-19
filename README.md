@@ -17,16 +17,16 @@ The easiest way to run DzenChat locally is using Docker Compose, which sets up t
 
 ## Prerequisites
 
-    Docker and Docker Compose installed.
+Docker and Docker Compose installed.
 
-    A .env file in the root directory for database secrets.
+A .env file in the root directory for database secrets.
 
 1. Configure Secrets
 
 Create a file named .env in the root directory of the project and add your MSSQL Server password:
 
-//.env file
-SA_PASSWORD=YourStrongLocalPassword123!
+.env file
+```SA_PASSWORD=YourStrongLocalPassword123!```
 
 2. Build and Run
 
@@ -52,3 +52,4 @@ MSSQL Server	localhost:1433	        Database access.
 # Deployment to Google Cloud Run
 
 The project uses GitHub Actions for continuous deployment to Google Cloud Run. The workflow executes on push.
+https://frontend-service-656951842437.europe-north1.run.app/
